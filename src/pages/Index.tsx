@@ -21,8 +21,8 @@ const Index = () => {
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmAction, setConfirmAction] = useState(null);
 
-  const handleDeleteConfirm = (action) => {
-    setConfirmAction(action);
+  const handleDeleteConfirm = (action: () => void) => {
+    setConfirmAction(() => action);
     setShowConfirmDialog(true);
   };
 

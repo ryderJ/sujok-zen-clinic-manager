@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Plus, Clock, CheckCircle, Calendar as CalendarIcon, Trash2, Edit } from "lucide-react";
+import { Plus, Clock, CheckCircle, Calendar as CalendarIcon, Trash2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface TherapyCalendarProps {
@@ -10,7 +10,7 @@ interface TherapyCalendarProps {
 }
 
 // Mock therapy sessions
-const mockSessions = [
+const mockSessionsData = [
   {
     id: 1,
     patientName: "Marija Rodriguez",
@@ -51,9 +51,10 @@ const mockSessions = [
 
 export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView = false }: TherapyCalendarProps) => {
   const [selectedDate, setSelectedDate] = useState("2024-06-24");
+  const [sessions, setSessions] = useState(mockSessionsData);
   
-  const todaysSessions = mockSessions.filter(session => session.date === selectedDate);
-  const upcomingSessions = mockSessions.filter(session => new Date(session.date) > new Date(selectedDate));
+  const todaysSessions = sessions.filter(session => session.date === selectedDate);
+  const upcomingSessions = sessions.filter(session => new Date(session.date) > new Date(selectedDate));
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -90,10 +91,60 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
 
   const handleDeleteSession = (sessionId: number) => {
     const deleteAction = () => {
-      console.log("Deleting session:", sessionId);
+      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      console.log("Obrisao sesiju:", sessionId);
     };
     onDeleteConfirm(deleteAction);
   };
+
+  const markAsCompleted = (sessionId: number) => {
+    setSessions(prev => prev.map(session => 
+      session.id === sessionId 
+        ? { ...session, status: "completed" }
+        : session
+    ));
+  };
+
+  const renderSession = (session: any) => (
+    <div key={session.id} className="p-4 rounded-xl border border-slate-200 hover:border-blue-200 transition-colors">
+      <div className="flex items-center justify-between">
+        <div className="flex-1">
+          <div className="flex items-center space-x-3 mb-2">
+            <span className="font-semibold text-slate-800">
+              {fullView ? `${new Date(session.date).toLocaleDateString('sr-RS')} u ${session.time}` : session.time}
+            </span>
+            <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(session.status)}`}>
+              {getStatusIcon(session.status)}
+              <span className="capitalize">{getStatusText(session.status)}</span>
+            </span>
+          </div>
+          <p className="text-slate-700 font-medium">{session.patientName}</p>
+          <p className="text-sm text-slate-500">{session.type} • {session.duration} min</p>
+        </div>
+        <div className="flex space-x-2">
+          {session.status === "scheduled" && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => markAsCompleted(session.id)}
+              className="text-green-600 hover:text-green-700 hover:bg-green-50"
+              title="Označi kao završeno"
+            >
+              <Check className="w-4 h-4" />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDeleteSession(session.id)}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <div className="bg-white rounded-2xl p-6 border border-slate-200">
@@ -120,40 +171,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
           <h3 className="font-medium text-slate-700 mb-3">Danas</h3>
           <div className="space-y-3">
             {todaysSessions.length > 0 ? (
-              todaysSessions.map((session) => (
-                <div key={session.id} className="p-4 rounded-xl border border-slate-200 hover:border-blue-200 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className="font-semibold text-slate-800">{session.time}</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(session.status)}`}>
-                          {getStatusIcon(session.status)}
-                          <span className="capitalize">{getStatusText(session.status)}</span>
-                        </span>
-                      </div>
-                      <p className="text-slate-700 font-medium">{session.patientName}</p>
-                      <p className="text-sm text-slate-500">{session.type} • {session.duration} min</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteSession(session.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))
+              todaysSessions.map(renderSession)
             ) : (
               <p className="text-slate-500 text-center py-8">Nema zakazanih sesija za danas</p>
             )}
@@ -164,42 +182,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
           <div>
             <h3 className="font-medium text-slate-700 mb-3 mt-6">Nadolazeće sesije</h3>
             <div className="space-y-3">
-              {upcomingSessions.slice(0, 5).map((session) => (
-                <div key={session.id} className="p-4 rounded-xl border border-slate-200 hover:border-blue-200 transition-colors">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <span className="font-semibold text-slate-800">
-                          {new Date(session.date).toLocaleDateString('sr-RS')} u {session.time}
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(session.status)}`}>
-                          {getStatusIcon(session.status)}
-                          <span className="capitalize">{getStatusText(session.status)}</span>
-                        </span>
-                      </div>
-                      <p className="text-slate-700 font-medium">{session.patientName}</p>
-                      <p className="text-sm text-slate-500">{session.type} • {session.duration} min</p>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteSession(session.id)}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
+              {upcomingSessions.slice(0, 5).map(renderSession)}
             </div>
           </div>
         )}

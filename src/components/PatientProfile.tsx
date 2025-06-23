@@ -1,6 +1,7 @@
 
-import { ArrowLeft, Plus, Download, Camera, FileText, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Download, Camera, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { exportPatientToPDF } from "@/utils/pdfExport";
 
 interface PatientProfileProps {
   patient: any;
@@ -41,9 +42,13 @@ const mockTreatments = [
 export const PatientProfile = ({ patient, onBack, onAddTreatment, onEditPatient, onDeleteConfirm }: PatientProfileProps) => {
   const handleDeleteTreatment = (treatmentId: number) => {
     const deleteAction = () => {
-      console.log("Deleting treatment:", treatmentId);
+      console.log("Obrisao tretman:", treatmentId);
     };
     onDeleteConfirm(deleteAction);
+  };
+
+  const handleExportPDF = () => {
+    exportPatientToPDF(patient, mockTreatments);
   };
 
   return (
@@ -70,11 +75,24 @@ export const PatientProfile = ({ patient, onBack, onAddTreatment, onEditPatient,
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-800">{patient.name}</h1>
-              <p className="text-slate-500">Pacijent od {new Date(patient.lastVisit).getFullYear()}</p>
+              <div className="flex items-center space-x-2">
+                <p className="text-slate-500">Pacijent od {new Date(patient.lastVisit).getFullYear()}</p>
+                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                  patient.isActive 
+                    ? "bg-green-100 text-green-800" 
+                    : "bg-slate-100 text-slate-600"
+                }`}>
+                  {patient.isActive ? "Aktivan" : "Neaktivan"}
+                </span>
+              </div>
             </div>
           </div>
           <div className="flex space-x-3">
-            <Button variant="outline" className="rounded-xl">
+            <Button 
+              onClick={handleExportPDF}
+              variant="outline" 
+              className="rounded-xl"
+            >
               <Download className="w-4 h-4 mr-2" />
               Izvezi PDF
             </Button>
@@ -86,13 +104,15 @@ export const PatientProfile = ({ patient, onBack, onAddTreatment, onEditPatient,
               <Edit className="w-4 h-4 mr-2" />
               Izmeni
             </Button>
-            <Button 
-              onClick={onAddTreatment}
-              className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Dodaj tretman
-            </Button>
+            {patient.isActive && (
+              <Button 
+                onClick={onAddTreatment}
+                className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Dodaj tretman
+              </Button>
+            )}
           </div>
         </div>
 
@@ -119,7 +139,7 @@ export const PatientProfile = ({ patient, onBack, onAddTreatment, onEditPatient,
 
       {/* Health Conditions */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">Zdravstveno stanje i napomene</h2>
+        <h2 className="text-lg font-semibold text-slate-800 mb-4">Zdravstveno st anje i napomene</h2>
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
           <p className="text-slate-700">{patient.conditions}</p>
         </div>
