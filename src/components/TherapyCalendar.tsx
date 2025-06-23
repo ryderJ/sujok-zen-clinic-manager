@@ -1,10 +1,11 @@
 
 import { useState } from "react";
-import { Plus, Clock, CheckCircle, Calendar as CalendarIcon } from "lucide-react";
+import { Plus, Clock, CheckCircle, Calendar as CalendarIcon, Trash2, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface TherapyCalendarProps {
   onScheduleTherapy: () => void;
+  onDeleteConfirm: (action: () => void) => void;
   fullView?: boolean;
 }
 
@@ -12,43 +13,43 @@ interface TherapyCalendarProps {
 const mockSessions = [
   {
     id: 1,
-    patientName: "Maria Rodriguez",
+    patientName: "Marija Rodriguez",
     date: "2024-06-24",
     time: "09:00",
     status: "scheduled",
-    type: "Su Jok Therapy",
+    type: "Su Jok terapija",
     duration: 45
   },
   {
     id: 2,
-    patientName: "John Chen",
+    patientName: "Jovan Čen",
     date: "2024-06-24",
     time: "10:30",
     status: "completed",
-    type: "Acupressure Session",
+    type: "Akupresura sesija",
     duration: 60
   },
   {
     id: 3,
-    patientName: "Sarah Williams",
+    patientName: "Sara Williams",
     date: "2024-06-24",
     time: "14:00",
     status: "scheduled",
-    type: "Initial Consultation",
+    type: "Inicijalna konsultacija",
     duration: 90
   },
   {
     id: 4,
-    patientName: "Maria Rodriguez",
+    patientName: "Marija Rodriguez",
     date: "2024-06-25",
     time: "11:00",
     status: "scheduled",
-    type: "Follow-up Session",
+    type: "Kontrolna sesija",
     duration: 45
   }
 ];
 
-export const TherapyCalendar = ({ onScheduleTherapy, fullView = false }: TherapyCalendarProps) => {
+export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView = false }: TherapyCalendarProps) => {
   const [selectedDate, setSelectedDate] = useState("2024-06-24");
   
   const todaysSessions = mockSessions.filter(session => session.date === selectedDate);
@@ -76,29 +77,47 @@ export const TherapyCalendar = ({ onScheduleTherapy, fullView = false }: Therapy
     }
   };
 
+  const getStatusText = (status: string) => {
+    switch (status) {
+      case "completed":
+        return "završeno";
+      case "scheduled":
+        return "zakazano";
+      default:
+        return status;
+    }
+  };
+
+  const handleDeleteSession = (sessionId: number) => {
+    const deleteAction = () => {
+      console.log("Deleting session:", sessionId);
+    };
+    onDeleteConfirm(deleteAction);
+  };
+
   return (
     <div className="bg-white rounded-2xl p-6 border border-slate-200">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-semibold text-slate-800">Therapy Sessions</h2>
+        <h2 className="text-xl font-semibold text-slate-800">Terapijske sesije</h2>
         <Button 
           onClick={onScheduleTherapy}
           className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
         >
           <Plus className="w-4 h-4 mr-2" />
-          Schedule Session
+          Zakaži sesiju
         </Button>
       </div>
 
       <div className="mb-6">
         <div className="flex items-center space-x-2 mb-4">
           <CalendarIcon className="w-5 h-5 text-slate-500" />
-          <span className="font-medium text-slate-700">Today - {new Date(selectedDate).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+          <span className="font-medium text-slate-700">Danas - {new Date(selectedDate).toLocaleDateString('sr-RS', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
         </div>
       </div>
 
       <div className="space-y-4">
         <div>
-          <h3 className="font-medium text-slate-700 mb-3">Today's Sessions</h3>
+          <h3 className="font-medium text-slate-700 mb-3">Danas</h3>
           <div className="space-y-3">
             {todaysSessions.length > 0 ? (
               todaysSessions.map((session) => (
@@ -109,24 +128,41 @@ export const TherapyCalendar = ({ onScheduleTherapy, fullView = false }: Therapy
                         <span className="font-semibold text-slate-800">{session.time}</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(session.status)}`}>
                           {getStatusIcon(session.status)}
-                          <span className="capitalize">{session.status}</span>
+                          <span className="capitalize">{getStatusText(session.status)}</span>
                         </span>
                       </div>
                       <p className="text-slate-700 font-medium">{session.patientName}</p>
                       <p className="text-sm text-slate-500">{session.type} • {session.duration} min</p>
                     </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteSession(session.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               ))
             ) : (
-              <p className="text-slate-500 text-center py-8">No sessions scheduled for today</p>
+              <p className="text-slate-500 text-center py-8">Nema zakazanih sesija za danas</p>
             )}
           </div>
         </div>
 
         {fullView && upcomingSessions.length > 0 && (
           <div>
-            <h3 className="font-medium text-slate-700 mb-3 mt-6">Upcoming Sessions</h3>
+            <h3 className="font-medium text-slate-700 mb-3 mt-6">Nadolazeće sesije</h3>
             <div className="space-y-3">
               {upcomingSessions.slice(0, 5).map((session) => (
                 <div key={session.id} className="p-4 rounded-xl border border-slate-200 hover:border-blue-200 transition-colors">
@@ -134,15 +170,32 @@ export const TherapyCalendar = ({ onScheduleTherapy, fullView = false }: Therapy
                     <div className="flex-1">
                       <div className="flex items-center space-x-3 mb-2">
                         <span className="font-semibold text-slate-800">
-                          {new Date(session.date).toLocaleDateString()} at {session.time}
+                          {new Date(session.date).toLocaleDateString('sr-RS')} u {session.time}
                         </span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(session.status)}`}>
                           {getStatusIcon(session.status)}
-                          <span className="capitalize">{session.status}</span>
+                          <span className="capitalize">{getStatusText(session.status)}</span>
                         </span>
                       </div>
                       <p className="text-slate-700 font-medium">{session.patientName}</p>
                       <p className="text-sm text-slate-500">{session.type} • {session.duration} min</p>
+                    </div>
+                    <div className="flex space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteSession(session.id)}
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
                     </div>
                   </div>
                 </div>

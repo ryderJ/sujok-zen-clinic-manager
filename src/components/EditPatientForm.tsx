@@ -6,25 +6,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
-interface AddPatientFormProps {
+interface EditPatientFormProps {
+  patient: any;
   onClose: () => void;
+  onSave: (updatedPatient: any) => void;
 }
 
-export const AddPatientForm = ({ onClose }: AddPatientFormProps) => {
+export const EditPatientForm = ({ patient, onClose, onSave }: EditPatientFormProps) => {
   const [formData, setFormData] = useState({
-    name: "",
-    dateOfBirth: "",
-    phone: "",
-    email: "",
-    conditions: ""
+    name: patient.name || "",
+    dateOfBirth: patient.dateOfBirth || "",
+    phone: patient.phone || "",
+    email: patient.email || "",
+    conditions: patient.conditions || ""
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would save to local storage
-    console.log("Novi pacijent:", formData);
-    toast.success("Pacijent je uspešno dodat!");
-    onClose();
+    const updatedPatient = { ...patient, ...formData };
+    
+    // Update in localStorage
+    const patients = JSON.parse(localStorage.getItem('patients') || '[]');
+    const patientIndex = patients.findIndex((p: any) => p.id === patient.id);
+    if (patientIndex !== -1) {
+      patients[patientIndex] = updatedPatient;
+      localStorage.setItem('patients', JSON.stringify(patients));
+    }
+    
+    onSave(updatedPatient);
+    toast.success("Podaci o pacijentu su ažurirani!");
   };
 
   const handleChange = (field: string, value: string) => {
@@ -35,7 +45,7 @@ export const AddPatientForm = ({ onClose }: AddPatientFormProps) => {
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-lg mx-4">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-slate-800">Dodaj novog pacijenta</h2>
+          <h2 className="text-xl font-semibold text-slate-800">Izmeni podatke pacijenta</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-4 h-4" />
           </Button>
@@ -108,7 +118,7 @@ export const AddPatientForm = ({ onClose }: AddPatientFormProps) => {
               Otkaži
             </Button>
             <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl">
-              Dodaj pacijenta
+              Sačuvaj izmene
             </Button>
           </div>
         </form>

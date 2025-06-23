@@ -8,13 +8,23 @@ import { PatientProfile } from "@/components/PatientProfile";
 import { AddPatientForm } from "@/components/AddPatientForm";
 import { AddTreatmentForm } from "@/components/AddTreatmentForm";
 import { ScheduleTherapyForm } from "@/components/ScheduleTherapyForm";
+import { EditPatientForm } from "@/components/EditPatientForm";
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 
 const Index = () => {
   const [activeView, setActiveView] = useState("dashboard");
   const [selectedPatient, setSelectedPatient] = useState(null);
   const [showAddPatient, setShowAddPatient] = useState(false);
+  const [showEditPatient, setShowEditPatient] = useState(false);
   const [showAddTreatment, setShowAddTreatment] = useState(false);
   const [showScheduleTherapy, setShowScheduleTherapy] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [confirmAction, setConfirmAction] = useState(null);
+
+  const handleDeleteConfirm = (action) => {
+    setConfirmAction(action);
+    setShowConfirmDialog(true);
+  };
 
   const renderMainContent = () => {
     switch (activeView) {
@@ -23,7 +33,7 @@ const Index = () => {
           <div className="space-y-8">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-slate-800 mb-2">Su Jok Doktor</h1>
-              <p className="text-slate-600">Manage your therapy practice with ease</p>
+              <p className="text-slate-600">Upravljajte svojom terapeutskom praksom sa lakoćom</p>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -31,9 +41,15 @@ const Index = () => {
                 <PatientsList 
                   onPatientSelect={setSelectedPatient}
                   onAddPatient={() => setShowAddPatient(true)}
+                  onEditPatient={(patient) => {
+                    setSelectedPatient(patient);
+                    setShowEditPatient(true);
+                  }}
+                  onDeleteConfirm={handleDeleteConfirm}
                 />
                 <TherapyCalendar 
                   onScheduleTherapy={() => setShowScheduleTherapy(true)}
+                  onDeleteConfirm={handleDeleteConfirm}
                 />
               </div>
               <div>
@@ -48,20 +64,27 @@ const Index = () => {
             patient={selectedPatient} 
             onBack={() => setSelectedPatient(null)}
             onAddTreatment={() => setShowAddTreatment(true)}
+            onEditPatient={() => setShowEditPatient(true)}
+            onDeleteConfirm={handleDeleteConfirm}
           />
         ) : (
           <PatientsList 
             onPatientSelect={setSelectedPatient}
             onAddPatient={() => setShowAddPatient(true)}
+            onEditPatient={(patient) => {
+              setSelectedPatient(patient);
+              setShowEditPatient(true);
+            }}
+            onDeleteConfirm={handleDeleteConfirm}
             fullView={true}
           />
         );
       case "therapies":
-        return <TherapyCalendar onScheduleTherapy={() => setShowScheduleTherapy(true)} fullView={true} />;
+        return <TherapyCalendar onScheduleTherapy={() => setShowScheduleTherapy(true)} onDeleteConfirm={handleDeleteConfirm} fullView={true} />;
       case "statistics":
         return <DashboardStats fullView={true} />;
       default:
-        return <div>Page not found</div>;
+        return <div>Stranica nije pronađena</div>;
     }
   };
 
@@ -78,6 +101,17 @@ const Index = () => {
         <AddPatientForm onClose={() => setShowAddPatient(false)} />
       )}
       
+      {showEditPatient && selectedPatient && (
+        <EditPatientForm 
+          patient={selectedPatient}
+          onClose={() => setShowEditPatient(false)}
+          onSave={(updatedPatient) => {
+            setSelectedPatient(updatedPatient);
+            setShowEditPatient(false);
+          }}
+        />
+      )}
+      
       {showAddTreatment && selectedPatient && (
         <AddTreatmentForm 
           patient={selectedPatient}
@@ -87,6 +121,16 @@ const Index = () => {
       
       {showScheduleTherapy && (
         <ScheduleTherapyForm onClose={() => setShowScheduleTherapy(false)} />
+      )}
+
+      {showConfirmDialog && confirmAction && (
+        <ConfirmDialog 
+          onClose={() => setShowConfirmDialog(false)}
+          onConfirm={() => {
+            confirmAction();
+            setShowConfirmDialog(false);
+          }}
+        />
       )}
     </div>
   );

@@ -1,5 +1,7 @@
 
-import { Users, Calendar, Activity, Settings, BarChart3 } from "lucide-react";
+import { Users, Calendar, Activity, Settings, BarChart3, Trash2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface SidebarProps {
   activeView: string;
@@ -8,12 +10,20 @@ interface SidebarProps {
 
 export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
   const menuItems = [
-    { id: "dashboard", label: "Dashboard", icon: Activity },
-    { id: "patients", label: "Patients", icon: Users },
-    { id: "therapies", label: "Therapies", icon: Calendar },
-    { id: "statistics", label: "Statistics", icon: BarChart3 },
-    { id: "settings", label: "Settings", icon: Settings },
+    { id: "dashboard", label: "Kontrolna tabla", icon: Activity },
+    { id: "patients", label: "Pacijenti", icon: Users },
+    { id: "therapies", label: "Terapije", icon: Calendar },
+    { id: "statistics", label: "Statistike", icon: BarChart3 },
+    { id: "settings", label: "Podešavanja", icon: Settings },
   ];
+
+  const clearAllData = () => {
+    localStorage.removeItem('patients');
+    localStorage.removeItem('treatments');
+    localStorage.removeItem('therapy-sessions');
+    toast.success("Svi podaci su obrisani!");
+    window.location.reload();
+  };
 
   return (
     <div className="w-64 bg-white border-r border-slate-200 min-h-screen">
@@ -47,6 +57,17 @@ export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
             );
           })}
         </nav>
+
+        <div className="mt-8 pt-6 border-t border-slate-200">
+          <Button
+            variant="outline"
+            onClick={clearAllData}
+            className="w-full text-red-600 hover:text-red-700 hover:bg-red-50 rounded-xl"
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Obriši sve podatke
+          </Button>
+        </div>
       </div>
     </div>
   );
