@@ -1,40 +1,44 @@
-
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { useUpdatePatient } from "@/hooks/usePatients";
+import { Patient } from "@/lib/supabase";
 
 interface EditPatientFormProps {
-  patient: any;
+  patient: Patient;
   onClose: () => void;
-  onSave: (updatedPatient: any) => void;
+  onSave: (updatedPatient: Patient) => void;
 }
 
 export const EditPatientForm = ({ patient, onClose, onSave }: EditPatientFormProps) => {
   const [formData, setFormData] = useState({
     name: patient.name || "",
-    dateOfBirth: patient.dateOfBirth || "",
+    date_of_birth: patient.date_of_birth || "",
     phone: patient.phone || "",
     email: patient.email || "",
     conditions: patient.conditions || ""
   });
 
+  const updatePatient = useUpdatePatient();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const updatedPatient = { ...patient, ...formData };
     
-    // Update in localStorage
-    const patients = JSON.parse(localStorage.getItem('patients') || '[]');
-    const patientIndex = patients.findIndex((p: any) => p.id === patient.id);
-    if (patientIndex !== -1) {
-      patients[patientIndex] = updatedPatient;
-      localStorage.setItem('patients', JSON.stringify(patients));
-    }
-    
-    onSave(updatedPatient);
-    toast.success("Podaci o pacijentu su ažurirani!");
+    updatePatient.mutate({
+      id: patient.id,
+      name: formData.name,
+      date_of_birth: formData.date_of_birth,
+      phone: formData.phone,
+      email: formData.email || undefined,
+      conditions: formData.conditions || undefined,
+    }, {
+      onSuccess: (updatedPatient) => {
+        onSave(updatedPatient);
+        onClose();
+      }
+    });
   };
 
   const handleChange = (field: string, value: string) => {
@@ -69,8 +73,8 @@ export const EditPatientForm = ({ patient, onClose, onSave }: EditPatientFormPro
             <Input
               id="dob"
               type="date"
-              value={formData.dateOfBirth}
-              onChange={(e) => handleChange("dateOfBirth", e.target.value)}
+              value={formData.date_of_birth}
+              onChange={(e) => handleChange("date_of_birth", e.target.value)}
               className="rounded-xl"
               required
             />
@@ -114,11 +118,21 @@ export const EditPatientForm = ({ patient, onClose, onSave }: EditPatientFormPro
           </div>
 
           <div className="flex space-x-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose} 
+              className="flex-1 rounded-xl"
+              disabled={updatePatient.isPending}
+            >
               Otkaži
             </Button>
-            <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl">
-              Sačuvaj izmene
+            <Button 
+              type="submit" 
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
+              disabled={updatePatient.isPending}
+            >
+              {updatePatient.isPending ? 'Čuvam...' : 'Sačuvaj izmene'}
             </Button>
           </div>
         </form>

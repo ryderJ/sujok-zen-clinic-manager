@@ -1,13 +1,13 @@
-
 import { useState } from "react";
 import { X, Upload, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { useCreateTreatment } from "@/hooks/useTreatments";
+import { Patient } from "@/lib/supabase";
 
 interface AddTreatmentFormProps {
-  patient: any;
+  patient: Patient;
   onClose: () => void;
 }
 
@@ -16,30 +16,40 @@ export const AddTreatmentForm = ({ patient, onClose }: AddTreatmentFormProps) =>
     date: new Date().toISOString().split('T')[0],
     description: "",
     notes: "",
-    duration: "45"
+    duration: 45
   });
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
+  const createTreatment = useCreateTreatment();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would save to local storage
-    console.log("Novi tretman:", { ...formData, patient: patient.name, photos: uploadedImages });
-    toast.success("Tretman je uspešno zabeležen!");
-    onClose();
+    
+    createTreatment.mutate({
+      patient_id: patient.id,
+      date: formData.date,
+      description: formData.description,
+      notes: formData.notes || undefined,
+      duration: formData.duration,
+      photos: uploadedImages
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      // In a real app, you'd handle file upload here
-      // For demo, we'll use placeholder images
-      const newImages = Array.from(files).map(() => "photo-1535268647677-300dbf3d78d1");
+      // In a real app, you'd upload files to storage and get URLs
+      // For demo, we'll use placeholder image IDs
+      const newImages = Array.from(files).map((_, index) => `photo-${Date.now()}-${index}`);
       setUploadedImages(prev => [...prev, ...newImages]);
-      toast.success(`${files.length} slika je učitano`);
     }
   };
 
@@ -75,7 +85,7 @@ export const AddTreatmentForm = ({ patient, onClose }: AddTreatmentFormProps) =>
               id="duration"
               type="number"
               value={formData.duration}
-              onChange={(e) => handleChange("duration", e.target.value)}
+              onChange={(e) => handleChange("duration", parseInt(e.target.value))}
               placeholder="45"
               className="rounded-xl"
               required
@@ -135,11 +145,9 @@ export const AddTreatmentForm = ({ patient, onClose }: AddTreatmentFormProps) =>
                 <div className="flex space-x-2">
                   {uploadedImages.map((image, index) => (
                     <div key={index} className="w-16 h-16 bg-slate-200 rounded-lg overflow-hidden">
-                      <img 
-                        src={`https://images.unsplash.com/${image}?w=150&h=150&fit=crop&auto=format`}
-                        alt={`Učitana slika ${index + 1}`}
-                        className="w-full h-full object-cover"
-                      />
+                      <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
+                        <Image className="w-6 h-6 text-blue-500" />
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -148,11 +156,21 @@ export const AddTreatmentForm = ({ patient, onClose }: AddTreatmentFormProps) =>
           </div>
 
           <div className="flex space-x-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose} 
+              className="flex-1 rounded-xl"
+              disabled={createTreatment.isPending}
+            >
               Otkaži
             </Button>
-            <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl">
-              Zabelež tretman
+            <Button 
+              type="submit" 
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
+              disabled={createTreatment.isPending}
+            >
+              {createTreatment.isPending ? 'Beležim...' : 'Zabelež tretman'}
             </Button>
           </div>
         </form>

@@ -1,22 +1,15 @@
-
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "sonner";
+import { usePatients } from "@/hooks/usePatients";
+import { useCreateTherapySession } from "@/hooks/useTherapySessions";
 
 interface ScheduleTherapyFormProps {
   onClose: () => void;
 }
-
-// Mock patients for selection
-const mockPatients = [
-  { id: 1, name: "Marija Rodriguez" },
-  { id: 2, name: "Jovan Čen" },
-  { id: 3, name: "Sara Williams" }
-];
 
 const therapyTypes = [
   "Su Jok terapija",
@@ -28,23 +21,36 @@ const therapyTypes = [
 
 export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
   const [formData, setFormData] = useState({
-    patientId: "",
+    patient_id: "",
     date: "",
     time: "",
-    therapyType: "",
-    duration: "45",
+    type: "",
+    duration: 45,
     notes: ""
   });
 
+  const { data: patients = [] } = usePatients();
+  const createSession = useCreateTherapySession();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would save to local storage
-    console.log("Novi termin:", formData);
-    toast.success("Terapijska sesija je uspešno zakazana!");
-    onClose();
+    
+    createSession.mutate({
+      patient_id: formData.patient_id,
+      date: formData.date,
+      time: formData.time,
+      type: formData.type,
+      duration: formData.duration,
+      status: 'zakazana',
+      notes: formData.notes || undefined
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -61,13 +67,13 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <Label htmlFor="patient">Pacijent *</Label>
-            <Select value={formData.patientId} onValueChange={(value) => handleChange("patientId", value)}>
+            <Select value={formData.patient_id} onValueChange={(value) => handleChange("patient_id", value)}>
               <SelectTrigger className="w-full rounded-xl">
                 <SelectValue placeholder="Odaberi pacijenta" />
               </SelectTrigger>
               <SelectContent>
-                {mockPatients.map((patient) => (
-                  <SelectItem key={patient.id} value={patient.id.toString()}>
+                {patients.filter(p => p.is_active).map((patient) => (
+                  <SelectItem key={patient.id} value={patient.id}>
                     {patient.name}
                   </SelectItem>
                 ))}
@@ -102,7 +108,7 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
 
           <div>
             <Label htmlFor="therapyType">Tip terapije *</Label>
-            <Select value={formData.therapyType} onValueChange={(value) => handleChange("therapyType", value)}>
+            <Select value={formData.type} onValueChange={(value) => handleChange("type", value)}>
               <SelectTrigger className="w-full rounded-xl">
                 <SelectValue placeholder="Odaberi tip terapije" />
               </SelectTrigger>
@@ -122,7 +128,7 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
               id="duration"
               type="number"
               value={formData.duration}
-              onChange={(e) => handleChange("duration", e.target.value)}
+              onChange={(e) => handleChange("duration", parseInt(e.target.value))}
               placeholder="45"
               className="rounded-xl"
               required
@@ -142,11 +148,21 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
           </div>
 
           <div className="flex space-x-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose} 
+              className="flex-1 rounded-xl"
+              disabled={createSession.isPending}
+            >
               Otkaži
             </Button>
-            <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl">
-              Zakaži sesiju
+            <Button 
+              type="submit" 
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
+              disabled={createSession.isPending}
+            >
+              {createSession.isPending ? 'Zakazujem...' : 'Zakaži sesiju'}
             </Button>
           </div>
         </form>

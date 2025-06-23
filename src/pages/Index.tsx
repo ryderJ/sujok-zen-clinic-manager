@@ -10,16 +10,17 @@ import { ScheduleTherapyForm } from "@/components/ScheduleTherapyForm";
 import { EditPatientForm } from "@/components/EditPatientForm";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
+import { Patient } from "@/lib/supabase";
 
 const Index = () => {
   const [activeView, setActiveView] = useState("dashboard");
-  const [selectedPatient, setSelectedPatient] = useState(null);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [showAddPatient, setShowAddPatient] = useState(false);
   const [showEditPatient, setShowEditPatient] = useState(false);
   const [showAddTreatment, setShowAddTreatment] = useState(false);
   const [showScheduleTherapy, setShowScheduleTherapy] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [confirmAction, setConfirmAction] = useState(null);
+  const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
 
   const handleDeleteConfirm = (action: () => void) => {
     setConfirmAction(() => action);

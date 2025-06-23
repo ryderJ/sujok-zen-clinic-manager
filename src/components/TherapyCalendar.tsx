@@ -1,8 +1,8 @@
-
 import { useState } from "react";
 import { Plus, Clock, CheckCircle, Calendar as CalendarIcon, Trash2, Check, Filter, User, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { useTherapySessions, useUpdateTherapySession, useDeleteTherapySession } from "@/hooks/useTherapySessions";
 
 interface TherapyCalendarProps {
   onScheduleTherapy: () => void;
@@ -10,77 +10,16 @@ interface TherapyCalendarProps {
   fullView?: boolean;
 }
 
-// Mock therapy sessions
-const mockSessionsData = [
-  {
-    id: 1,
-    patientName: "Marija Rodriguez",
-    date: "2024-06-24",
-    time: "09:00",
-    status: "zakazana",
-    type: "Su Jok terapija",
-    duration: 45,
-    notes: "Fokus na tačke za varenje"
-  },
-  {
-    id: 2,
-    patientName: "Jovan Čen",
-    date: "2024-06-24",
-    time: "10:30",
-    status: "odrađena",
-    type: "Akupresura sesija",
-    duration: 60,
-    notes: "Sesija za smanjenje stresa"
-  },
-  {
-    id: 3,
-    patientName: "Sara Williams",
-    date: "2024-06-24",
-    time: "14:00",
-    status: "zakazana",
-    type: "Inicijalna konsultacija",
-    duration: 90,
-    notes: "Prva procena stanja"
-  },
-  {
-    id: 4,
-    patientName: "Marija Rodriguez",
-    date: "2024-06-25",
-    time: "11:00",
-    status: "zakazana",
-    type: "Kontrolna sesija",
-    duration: 45,
-    notes: "Praćenje napretka"
-  },
-  {
-    id: 5,
-    patientName: "Petar Milic",
-    date: "2024-06-23",
-    time: "16:00",
-    status: "propuštena",
-    type: "Su Jok terapija",
-    duration: 45,
-    notes: "Pacijent nije došao"
-  },
-  {
-    id: 6,
-    patientName: "Ana Stojanović",
-    date: "2024-06-26",
-    time: "09:30",
-    status: "zakazana",
-    type: "Akupresura",
-    duration: 60,
-    notes: "Terapija za migrene"
-  }
-];
-
 export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView = false }: TherapyCalendarProps) => {
-  const [sessions, setSessions] = useState(mockSessionsData);
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
   const [dateFilter, setDateFilter] = useState("");
   const [patientFilter, setPatientFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+
+  const { data: sessions = [], isLoading } = useTherapySessions();
+  const updateSession = useUpdateTherapySession();
+  const deleteSession = useDeleteTherapySession();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -108,20 +47,18 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
     }
   };
 
-  const handleDeleteSession = (sessionId: number) => {
+  const handleDeleteSession = (sessionId: string) => {
     const deleteAction = () => {
-      setSessions(prev => prev.filter(s => s.id !== sessionId));
-      console.log("Obrisao sesiju:", sessionId);
+      deleteSession.mutate(sessionId);
     };
     onDeleteConfirm(deleteAction);
   };
 
-  const markAsCompleted = (sessionId: number) => {
-    setSessions(prev => prev.map(session => 
-      session.id === sessionId 
-        ? { ...session, status: "odrađena" }
-        : session
-    ));
+  const markAsCompleted = (sessionId: string) => {
+    updateSession.mutate({
+      id: sessionId,
+      status: 'odrađena'
+    });
   };
 
   const openSessionModal = (session: any) => {
@@ -134,7 +71,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
     .filter(session => {
       const matchesDate = !dateFilter || session.date.includes(dateFilter);
       const matchesPatient = !patientFilter || 
-        session.patientName.toLowerCase().includes(patientFilter.toLowerCase());
+        session.patient?.name.toLowerCase().includes(patientFilter.toLowerCase());
       const matchesStatus = !statusFilter || session.status === statusFilter;
       return matchesDate && matchesPatient && matchesStatus;
     })
@@ -173,7 +110,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
               <span className="capitalize">{session.status}</span>
             </span>
           </div>
-          <p className="text-slate-700 font-medium">{session.patientName}</p>
+          <p className="text-slate-700 font-medium">{session.patient?.name}</p>
           <p className="text-sm text-slate-500">{session.type} • {session.duration} min</p>
           {session.notes && (
             <p className="text-xs text-slate-400 mt-1 truncate">{session.notes}</p>
@@ -187,6 +124,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
               onClick={() => markAsCompleted(session.id)}
               className="text-green-600 hover:text-green-700 hover:bg-green-50"
               title="Označi kao završeno"
+              disabled={updateSession.isPending}
             >
               <Check className="w-4 h-4" />
             </Button>
@@ -196,6 +134,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
             size="sm"
             onClick={() => handleDeleteSession(session.id)}
             className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            disabled={deleteSession.isPending}
           >
             <Trash2 className="w-4 h-4" />
           </Button>
@@ -203,6 +142,16 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
       </div>
     </div>
   );
+
+  if (isLoading) {
+    return (
+      <div className="bg-white rounded-2xl p-6 border border-slate-200">
+        <div className="flex items-center justify-center py-8">
+          <div className="text-slate-500">Učitavam sesije...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
@@ -332,7 +281,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
               <div className="flex items-center space-x-3">
                 <User className="w-5 h-5 text-slate-500" />
                 <div>
-                  <p className="font-medium text-slate-800">{selectedSession.patientName}</p>
+                  <p className="font-medium text-slate-800">{selectedSession.patient?.name}</p>
                   <p className="text-sm text-slate-500">{selectedSession.type}</p>
                 </div>
               </div>
@@ -371,6 +320,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
                       setShowSessionModal(false);
                     }}
                     className="flex-1 bg-green-500 hover:bg-green-600 text-white"
+                    disabled={updateSession.isPending}
                   >
                     <Check className="w-4 h-4 mr-2" />
                     Označi kao završeno
@@ -383,6 +333,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
                     setShowSessionModal(false);
                   }}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                  disabled={deleteSession.isPending}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Obriši

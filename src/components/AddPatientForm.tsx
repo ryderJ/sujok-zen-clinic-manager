@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { toast } from "sonner";
+import { useCreatePatient } from "@/hooks/usePatients";
 
 interface AddPatientFormProps {
   onClose: () => void;
@@ -13,18 +12,29 @@ interface AddPatientFormProps {
 export const AddPatientForm = ({ onClose }: AddPatientFormProps) => {
   const [formData, setFormData] = useState({
     name: "",
-    dateOfBirth: "",
+    date_of_birth: "",
     phone: "",
     email: "",
     conditions: ""
   });
 
+  const createPatient = useCreatePatient();
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would save to local storage
-    console.log("Novi pacijent:", formData);
-    toast.success("Pacijent je uspešno dodat!");
-    onClose();
+    
+    createPatient.mutate({
+      name: formData.name,
+      date_of_birth: formData.date_of_birth,
+      phone: formData.phone,
+      email: formData.email || undefined,
+      conditions: formData.conditions || undefined,
+      is_active: true
+    }, {
+      onSuccess: () => {
+        onClose();
+      }
+    });
   };
 
   const handleChange = (field: string, value: string) => {
@@ -59,8 +69,8 @@ export const AddPatientForm = ({ onClose }: AddPatientFormProps) => {
             <Input
               id="dob"
               type="date"
-              value={formData.dateOfBirth}
-              onChange={(e) => handleChange("dateOfBirth", e.target.value)}
+              value={formData.date_of_birth}
+              onChange={(e) => handleChange("date_of_birth", e.target.value)}
               className="rounded-xl"
               required
             />
@@ -104,11 +114,21 @@ export const AddPatientForm = ({ onClose }: AddPatientFormProps) => {
           </div>
 
           <div className="flex space-x-3 pt-4">
-            <Button type="button" variant="outline" onClick={onClose} className="flex-1 rounded-xl">
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={onClose} 
+              className="flex-1 rounded-xl"
+              disabled={createPatient.isPending}
+            >
               Otkaži
             </Button>
-            <Button type="submit" className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl">
-              Dodaj pacijenta
+            <Button 
+              type="submit" 
+              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
+              disabled={createPatient.isPending}
+            >
+              {createPatient.isPending ? 'Dodajem...' : 'Dodaj pacijenta'}
             </Button>
           </div>
         </form>
