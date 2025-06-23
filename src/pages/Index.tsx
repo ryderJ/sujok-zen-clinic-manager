@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { DashboardStats } from "@/components/DashboardStats";
@@ -10,6 +9,7 @@ import { AddTreatmentForm } from "@/components/AddTreatmentForm";
 import { ScheduleTherapyForm } from "@/components/ScheduleTherapyForm";
 import { EditPatientForm } from "@/components/EditPatientForm";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { FloatingActionButton } from "@/components/FloatingActionButton";
 
 const Index = () => {
   const [activeView, setActiveView] = useState("dashboard");
@@ -95,6 +95,9 @@ const Index = () => {
       <main className="flex-1 p-8">
         {renderMainContent()}
       </main>
+
+      {/* Floating Action Button */}
+      <FloatingActionButton onClick={() => setShowScheduleTherapy(true)} />
 
       {/* Modals */}
       {showAddPatient && (

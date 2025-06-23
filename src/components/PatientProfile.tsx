@@ -1,5 +1,4 @@
-
-import { ArrowLeft, Plus, Download, Camera, Edit, Trash2 } from "lucide-react";
+import { ArrowLeft, Plus, Download, Camera, Edit, Trash2, Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { exportPatientToPDF } from "@/utils/pdfExport";
 
@@ -39,6 +38,15 @@ const mockTreatments = [
   }
 ];
 
+// Mock therapy sessions for this patient
+const mockPatientSessions = [
+  { id: 1, date: "2024-06-22", time: "10:00", status: "odrađena" },
+  { id: 2, date: "2024-06-20", time: "14:30", status: "odrađena" },
+  { id: 3, date: "2024-06-25", time: "09:00", status: "zakazana" },
+  { id: 4, date: "2024-06-15", time: "11:00", status: "odrađena" },
+  { id: 5, date: "2024-06-12", time: "16:00", status: "propuštena" },
+];
+
 export const PatientProfile = ({ patient, onBack, onAddTreatment, onEditPatient, onDeleteConfirm }: PatientProfileProps) => {
   const handleDeleteTreatment = (treatmentId: number) => {
     const deleteAction = () => {
@@ -50,6 +58,22 @@ export const PatientProfile = ({ patient, onBack, onAddTreatment, onEditPatient,
   const handleExportPDF = () => {
     exportPatientToPDF(patient, mockTreatments);
   };
+
+  const getSessionStatusColor = (status: string) => {
+    switch (status) {
+      case "odrađena":
+        return "bg-green-100 text-green-800 border-green-200";
+      case "zakazana":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "propuštena":
+        return "bg-gray-100 text-gray-800 border-gray-200";
+      default:
+        return "bg-slate-100 text-slate-800 border-slate-200";
+    }
+  };
+
+  const completedSessions = mockPatientSessions.filter(s => s.status === "odrađena").length;
+  const totalSessions = mockPatientSessions.length;
 
   return (
     <div className="space-y-6">
@@ -137,9 +161,71 @@ export const PatientProfile = ({ patient, onBack, onAddTreatment, onEditPatient,
         </div>
       </div>
 
+      {/* Patient Statistics */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-200">
+        <h2 className="text-lg font-semibold text-slate-800 mb-4">Statistike pacijenta</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+          <div className="bg-blue-50 rounded-xl p-4">
+            <div className="flex items-center space-x-3">
+              <Calendar className="w-8 h-8 text-blue-600" />
+              <div>
+                <p className="text-2xl font-bold text-blue-600">{totalSessions}</p>
+                <p className="text-sm text-slate-600">Ukupno sesija</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-green-50 rounded-xl p-4">
+            <div className="flex items-center space-x-3">
+              <Clock className="w-8 h-8 text-green-600" />
+              <div>
+                <p className="text-2xl font-bold text-green-600">{completedSessions}</p>
+                <p className="text-sm text-slate-600">Završene sesije</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-amber-50 rounded-xl p-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-amber-100 rounded-full flex items-center justify-center">
+                <span className="text-amber-600 font-bold text-sm">%</span>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-amber-600">
+                  {Math.round((completedSessions / totalSessions) * 100)}%
+                </p>
+                <p className="text-sm text-slate-600">Stopa završenih</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="font-medium text-slate-700 mb-3">Hronologija sesija</h3>
+          <div className="space-y-2 max-h-48 overflow-y-auto">
+            {mockPatientSessions
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .map((session) => (
+                <div key={session.id} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <span className="font-medium text-slate-800">
+                      {new Date(session.date).toLocaleDateString('sr-RS')}
+                    </span>
+                    <span className="text-slate-600">{session.time}</span>
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getSessionStatusColor(session.status)}`}>
+                    {session.status}
+                  </span>
+                </div>
+              ))}
+          </div>
+        </div>
+      </div>
+
       {/* Health Conditions */}
       <div className="bg-white rounded-2xl p-6 border border-slate-200">
-        <h2 className="text-lg font-semibold text-slate-800 mb-4">Zdravstveno st anje i napomene</h2>
+        <h2 className="text-lg font-semibold text-slate-800 mb-4">Zdravstveno stanje i napomene</h2>
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
           <p className="text-slate-700">{patient.conditions}</p>
         </div>
