@@ -45,7 +45,10 @@ export const SessionEditModal = ({ session, isOpen, onClose }: SessionEditModalP
             <select
               id="status"
               value={editData.status}
-              onChange={(e) => setEditData(prev => ({ ...prev, status: e.target.value }))}
+              onChange={(e) => setEditData(prev => ({ 
+                ...prev, 
+                status: e.target.value as 'zakazana' | 'odrađena' | 'propuštena'
+              }))}
               className="w-full px-3 py-2 border border-slate-200 rounded-lg"
             >
               <option value="zakazana">Zakazana</option>
