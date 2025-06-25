@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { usePatients, useUpdatePatient, useDeletePatient } from "@/hooks/usePatients";
 import { useTherapySessions } from "@/hooks/useTherapySessions";
-import { Patient } from "@/lib/supabase";
+import { Patient } from "@/lib/localDatabase";
 
 interface PatientsListProps {
   onPatientSelect: (patient: Patient) => void;
