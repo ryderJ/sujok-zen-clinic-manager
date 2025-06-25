@@ -30,11 +30,11 @@ export const AddPatientForm = ({ onClose }: AddPatientFormProps) => {
       email: formData.email || undefined,
       conditions: formData.conditions || undefined,
       is_active: true
-    }, {
-      onSuccess: () => {
-        onClose();
-      }
     });
+    
+    if (!createPatient.isPending) {
+      onClose();
+    }
   };
 
   const handleChange = (field: string, value: string) => {

@@ -20,6 +20,12 @@ export const usePatients = () => {
 
   useEffect(() => {
     loadPatients();
+    
+    // Dodaj event listener za promene
+    const handleDataChange = () => loadPatients();
+    window.addEventListener('dataChanged', handleDataChange);
+    
+    return () => window.removeEventListener('dataChanged', handleDataChange);
   }, []);
 
   return {

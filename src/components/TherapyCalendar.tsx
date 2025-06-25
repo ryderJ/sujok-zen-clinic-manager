@@ -1,9 +1,9 @@
-
 import { useState } from "react";
-import { Plus, Clock, CheckCircle, Calendar as CalendarIcon, Trash2, Check, Filter, User, Search, X, Edit } from "lucide-react";
+import { Plus, Clock, CheckCircle, Calendar as CalendarIcon, Trash2, Check, Filter, User, Search, X, Edit, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useTherapySessions, useUpdateTherapySession, useDeleteTherapySession } from "@/hooks/useTherapySessions";
+import { SessionEditModal } from "./SessionEditModal";
 
 interface TherapyCalendarProps {
   onScheduleTherapy: () => void;
@@ -14,10 +14,10 @@ interface TherapyCalendarProps {
 export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView = false }: TherapyCalendarProps) => {
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [dateFilter, setDateFilter] = useState("");
   const [patientFilter, setPatientFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-  const [editingStatus, setEditingStatus] = useState(false);
 
   const { data: sessions = [], isLoading } = useTherapySessions();
   const updateSession = useUpdateTherapySession();
@@ -43,7 +43,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
       case "zakazana":
         return <Clock className="w-4 h-4" />;
       case "propuštena":
-        return <X className="w-4 h-4" />;
+        return <UserX className="w-4 h-4" />;
       default:
         return <Clock className="w-4 h-4" />;
     }
@@ -64,13 +64,17 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
     if (selectedSession && selectedSession.id === sessionId) {
       setSelectedSession({...selectedSession, status});
     }
-    setEditingStatus(false);
   };
 
   const openSessionModal = (session: any) => {
     setSelectedSession(session);
     setShowSessionModal(true);
-    setEditingStatus(false);
+  };
+
+  const openEditModal = (session: any) => {
+    setSelectedSession(session);
+    setShowEditModal(true);
+    setShowSessionModal(false);
   };
 
   // Filter and sort sessions
@@ -131,7 +135,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
                 size="sm"
                 onClick={() => updateSessionStatus(session.id, 'odrađena')}
                 className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                title="Prisustvovao"
+                title="Bio na terapiji"
                 disabled={updateSession.isPending}
               >
                 <Check className="w-4 h-4" />
@@ -141,13 +145,22 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
                 size="sm"
                 onClick={() => updateSessionStatus(session.id, 'propuštena')}
                 className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
-                title="Nije bio"
+                title="Nije bio na terapiji"
                 disabled={updateSession.isPending}
               >
-                <X className="w-4 h-4" />
+                <UserX className="w-4 h-4" />
               </Button>
             </>
           )}
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => openEditModal(session)}
+            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+            title="Izmeni"
+          >
+            <Edit className="w-4 h-4" />
+          </Button>
           <Button
             variant="ghost"
             size="sm"
@@ -324,44 +337,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
                     {selectedSession.status}
                   </span>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setEditingStatus(!editingStatus)}
-                  className="text-blue-600 hover:text-blue-700"
-                >
-                  <Edit className="w-4 h-4" />
-                </Button>
               </div>
-
-              {editingStatus && (
-                <div className="bg-slate-50 rounded-lg p-3">
-                  <p className="text-sm font-medium text-slate-700 mb-2">Promeni status:</p>
-                  <div className="flex space-x-2">
-                    <Button
-                      size="sm"
-                      onClick={() => updateSessionStatus(selectedSession.id, 'zakazana')}
-                      className="bg-yellow-500 hover:bg-yellow-600 text-white"
-                    >
-                      Zakazana
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => updateSessionStatus(selectedSession.id, 'odrađena')}
-                      className="bg-green-500 hover:bg-green-600 text-white"
-                    >
-                      Prisustvovao
-                    </Button>
-                    <Button
-                      size="sm"
-                      onClick={() => updateSessionStatus(selectedSession.id, 'propuštena')}
-                      className="bg-gray-500 hover:bg-gray-600 text-white"
-                    >
-                      Nije bio
-                    </Button>
-                  </div>
-                </div>
-              )}
 
               {selectedSession.notes && (
                 <div className="bg-slate-50 rounded-lg p-3">
@@ -388,6 +364,15 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
           )}
         </DialogContent>
       </Dialog>
+      
+      {/* Session Edit Modal */}
+      {selectedSession && (
+        <SessionEditModal
+          session={selectedSession}
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
     </>
   );
 };

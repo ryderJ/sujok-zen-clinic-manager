@@ -33,12 +33,11 @@ export const EditPatientForm = ({ patient, onClose, onSave }: EditPatientFormPro
       phone: formData.phone,
       email: formData.email || undefined,
       conditions: formData.conditions || undefined,
-    }, {
-      onSuccess: (updatedPatient) => {
-        onSave(updatedPatient);
-        onClose();
-      }
     });
+    
+    if (!updatePatient.isPending) {
+      onClose();
+    }
   };
 
   const handleChange = (field: string, value: string) => {

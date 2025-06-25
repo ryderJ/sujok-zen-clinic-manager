@@ -43,11 +43,11 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
       duration: formData.duration,
       status: 'zakazana',
       notes: formData.notes || undefined
-    }, {
-      onSuccess: () => {
-        onClose();
-      }
     });
+    
+    if (!createSession.isPending) {
+      onClose();
+    }
   };
 
   const handleChange = (field: string, value: string | number) => {

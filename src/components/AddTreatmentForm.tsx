@@ -1,9 +1,12 @@
+
 import { useState } from "react";
 import { X, Upload, Image } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useCreateTreatment } from "@/hooks/useTreatments";
+import { useTherapySessions } from "@/hooks/useTherapySessions";
 import { Patient } from "@/lib/supabase";
 
 interface AddTreatmentFormProps {
@@ -13,7 +16,7 @@ interface AddTreatmentFormProps {
 
 export const AddTreatmentForm = ({ patient, onClose }: AddTreatmentFormProps) => {
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split('T')[0],
+    session_id: "",
     description: "",
     notes: "",
     duration: 45
@@ -21,22 +24,30 @@ export const AddTreatmentForm = ({ patient, onClose }: AddTreatmentFormProps) =>
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
 
   const createTreatment = useCreateTreatment();
+  const { data: sessions = [] } = useTherapySessions();
+  
+  // Filtriraj sesije samo za ovog pacijenta
+  const patientSessions = sessions.filter(session => 
+    session.patient_id === patient.id && session.status === 'odrađena'
+  );
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    const selectedSession = patientSessions.find(s => s.id === formData.session_id);
+    
     createTreatment.mutate({
       patient_id: patient.id,
-      date: formData.date,
+      date: selectedSession?.date || new Date().toISOString().split('T')[0],
       description: formData.description,
       notes: formData.notes || undefined,
       duration: formData.duration,
       photos: uploadedImages
-    }, {
-      onSuccess: () => {
-        onClose();
-      }
     });
+    
+    if (!createTreatment.isPending) {
+      onClose();
+    }
   };
 
   const handleChange = (field: string, value: string | number) => {
@@ -46,8 +57,6 @@ export const AddTreatmentForm = ({ patient, onClose }: AddTreatmentFormProps) =>
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (files) {
-      // In a real app, you'd upload files to storage and get URLs
-      // For demo, we'll use placeholder image IDs
       const newImages = Array.from(files).map((_, index) => `photo-${Date.now()}-${index}`);
       setUploadedImages(prev => [...prev, ...newImages]);
     }
@@ -68,15 +77,24 @@ export const AddTreatmentForm = ({ patient, onClose }: AddTreatmentFormProps) =>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="date">Datum tretmana *</Label>
-            <Input
-              id="date"
-              type="date"
-              value={formData.date}
-              onChange={(e) => handleChange("date", e.target.value)}
-              className="rounded-xl"
-              required
-            />
+            <Label htmlFor="session">Odaberi završenu sesiju *</Label>
+            <Select value={formData.session_id} onValueChange={(value) => handleChange("session_id", value)}>
+              <SelectTrigger className="w-full rounded-xl">
+                <SelectValue placeholder="Odaberi sesiju iz liste" />
+              </SelectTrigger>
+              <SelectContent>
+                {patientSessions.map((session) => (
+                  <SelectItem key={session.id} value={session.id}>
+                    {new Date(session.date).toLocaleDateString('sr-RS')} - {session.type} ({session.time})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {patientSessions.length === 0 && (
+              <p className="text-sm text-slate-500 mt-1">
+                Nema završenih sesija za ovog pacijenta
+              </p>
+            )}
           </div>
 
           <div>
@@ -168,7 +186,7 @@ export const AddTreatmentForm = ({ patient, onClose }: AddTreatmentFormProps) =>
             <Button 
               type="submit" 
               className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
-              disabled={createTreatment.isPending}
+              disabled={createTreatment.isPending || !formData.session_id}
             >
               {createTreatment.isPending ? 'Beležim...' : 'Zabelež tretman'}
             </Button>
