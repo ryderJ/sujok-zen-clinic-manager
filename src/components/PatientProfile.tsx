@@ -1,9 +1,10 @@
+
 import { ArrowLeft, Plus, Download, Camera, Edit, Trash2, Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { exportPatientToPDF } from "@/utils/pdfExport";
 import { useTherapySessions } from "@/hooks/useTherapySessions";
 import { useTreatments, useDeleteTreatment } from "@/hooks/useTreatments";
-import { Patient } from "@/lib/supabase";
+import { Patient } from "@/lib/localDatabase";
 
 interface PatientProfileProps {
   patient: Patient;
@@ -53,6 +54,7 @@ export const PatientProfile = ({
 
   const completedSessions = patientSessions.filter(s => s.status === "odrađena").length;
   const totalSessions = patientSessions.length;
+  const missedSessions = patientSessions.filter(s => s.status === "propuštena").length;
 
   return (
     <div className="space-y-6">
@@ -144,7 +146,7 @@ export const PatientProfile = ({
       <div className="bg-white rounded-2xl p-6 border border-slate-200">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">Statistike pacijenta</h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
           <div className="bg-blue-50 rounded-xl p-4">
             <div className="flex items-center space-x-3">
               <Calendar className="w-8 h-8 text-blue-600" />
@@ -161,6 +163,18 @@ export const PatientProfile = ({
               <div>
                 <p className="text-2xl font-bold text-green-600">{completedSessions}</p>
                 <p className="text-sm text-slate-600">Završene sesije</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-gray-50 rounded-xl p-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                <span className="text-gray-600 font-bold text-sm">X</span>
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-600">{missedSessions}</p>
+                <p className="text-sm text-slate-600">Propuštene sesije</p>
               </div>
             </div>
           </div>

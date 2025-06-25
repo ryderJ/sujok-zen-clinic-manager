@@ -1,91 +1,88 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase, type Patient } from '@/lib/supabase';
+
+import { useState, useEffect } from 'react';
+import { localDB, Patient } from '@/lib/localDatabase';
 import { toast } from 'sonner';
 
 export const usePatients = () => {
-  return useQuery({
-    queryKey: ['patients'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('patients')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data as Patient[];
-    },
-  });
+  const [data, setData] = useState<Patient[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadPatients = () => {
+    try {
+      const patients = localDB.getPatients();
+      setData(patients);
+    } catch (error) {
+      console.error('Greška pri učitavanju pacijenata:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPatients();
+  }, []);
+
+  return {
+    data,
+    isLoading,
+    refetch: loadPatients
+  };
 };
 
 export const useCreatePatient = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (patient: Omit<Patient, 'id' | 'created_at' | 'updated_at'>) => {
-      const { data, error } = await supabase
-        .from('patients')
-        .insert([patient])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
+  const [isPending, setIsPending] = useState(false);
+
+  const mutate = async (patient: Omit<Patient, 'id' | 'created_at' | 'updated_at'>) => {
+    setIsPending(true);
+    try {
+      localDB.addPatient(patient);
       toast.success('Pacijent je uspešno dodat!');
-    },
-    onError: (error) => {
-      toast.error('Greška pri dodavanju pacijenta: ' + error.message);
-    },
-  });
+      // Trigger refetch by dispatching custom event
+      window.dispatchEvent(new CustomEvent('dataChanged'));
+    } catch (error) {
+      toast.error('Greška pri dodavanju pacijenta');
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  return { mutate, isPending };
 };
 
 export const useUpdatePatient = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<Patient> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('patients')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
+  const [isPending, setIsPending] = useState(false);
+
+  const mutate = async ({ id, ...updates }: Partial<Patient> & { id: string }) => {
+    setIsPending(true);
+    try {
+      localDB.updatePatient(id, updates);
       toast.success('Podaci o pacijentu su ažurirani!');
-    },
-    onError: (error) => {
-      toast.error('Greška pri ažuriranju pacijenta: ' + error.message);
-    },
-  });
+      window.dispatchEvent(new CustomEvent('dataChanged'));
+    } catch (error) {
+      toast.error('Greška pri ažuriranju pacijenta');
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  return { mutate, isPending };
 };
 
 export const useDeletePatient = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('patients')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['patients'] });
-      queryClient.invalidateQueries({ queryKey: ['therapy-sessions'] });
-      queryClient.invalidateQueries({ queryKey: ['treatments'] });
+  const [isPending, setIsPending] = useState(false);
+
+  const mutate = async (id: string) => {
+    setIsPending(true);
+    try {
+      localDB.deletePatient(id);
       toast.success('Pacijent je uspešno obrisan!');
-    },
-    onError: (error) => {
-      toast.error('Greška pri brisanju pacijenta: ' + error.message);
-    },
-  });
+      window.dispatchEvent(new CustomEvent('dataChanged'));
+    } catch (error) {
+      toast.error('Greška pri brisanju pacijenta');
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  return { mutate, isPending };
 };

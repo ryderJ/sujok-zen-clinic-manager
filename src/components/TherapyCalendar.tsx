@@ -1,5 +1,6 @@
+
 import { useState } from "react";
-import { Plus, Clock, CheckCircle, Calendar as CalendarIcon, Trash2, Check, Filter, User, Search } from "lucide-react";
+import { Plus, Clock, CheckCircle, Calendar as CalendarIcon, Trash2, Check, Filter, User, Search, X, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useTherapySessions, useUpdateTherapySession, useDeleteTherapySession } from "@/hooks/useTherapySessions";
@@ -16,6 +17,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
   const [dateFilter, setDateFilter] = useState("");
   const [patientFilter, setPatientFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [editingStatus, setEditingStatus] = useState(false);
 
   const { data: sessions = [], isLoading } = useTherapySessions();
   const updateSession = useUpdateTherapySession();
@@ -41,7 +43,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
       case "zakazana":
         return <Clock className="w-4 h-4" />;
       case "propuštena":
-        return <div className="w-4 h-4 rounded-full bg-gray-400"></div>;
+        return <X className="w-4 h-4" />;
       default:
         return <Clock className="w-4 h-4" />;
     }
@@ -54,16 +56,21 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
     onDeleteConfirm(deleteAction);
   };
 
-  const markAsCompleted = (sessionId: string) => {
+  const updateSessionStatus = (sessionId: string, status: 'odrađena' | 'propuštena' | 'zakazana') => {
     updateSession.mutate({
       id: sessionId,
-      status: 'odrađena'
+      status
     });
+    if (selectedSession && selectedSession.id === sessionId) {
+      setSelectedSession({...selectedSession, status});
+    }
+    setEditingStatus(false);
   };
 
   const openSessionModal = (session: any) => {
     setSelectedSession(session);
     setShowSessionModal(true);
+    setEditingStatus(false);
   };
 
   // Filter and sort sessions
@@ -118,16 +125,28 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
         </div>
         <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
           {session.status === "zakazana" && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => markAsCompleted(session.id)}
-              className="text-green-600 hover:text-green-700 hover:bg-green-50"
-              title="Označi kao završeno"
-              disabled={updateSession.isPending}
-            >
-              <Check className="w-4 h-4" />
-            </Button>
+            <>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => updateSessionStatus(session.id, 'odrađena')}
+                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                title="Prisustvovao"
+                disabled={updateSession.isPending}
+              >
+                <Check className="w-4 h-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => updateSessionStatus(session.id, 'propuštena')}
+                className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                title="Nije bio"
+                disabled={updateSession.isPending}
+              >
+                <X className="w-4 h-4" />
+              </Button>
+            </>
           )}
           <Button
             variant="ghost"
@@ -296,14 +315,53 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3">
-                <div className="w-5 h-5 flex items-center justify-center">
-                  {getStatusIcon(selectedSession.status)}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-3">
+                  <div className="w-5 h-5 flex items-center justify-center">
+                    {getStatusIcon(selectedSession.status)}
+                  </div>
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(selectedSession.status)}`}>
+                    {selectedSession.status}
+                  </span>
                 </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(selectedSession.status)}`}>
-                  {selectedSession.status}
-                </span>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditingStatus(!editingStatus)}
+                  className="text-blue-600 hover:text-blue-700"
+                >
+                  <Edit className="w-4 h-4" />
+                </Button>
               </div>
+
+              {editingStatus && (
+                <div className="bg-slate-50 rounded-lg p-3">
+                  <p className="text-sm font-medium text-slate-700 mb-2">Promeni status:</p>
+                  <div className="flex space-x-2">
+                    <Button
+                      size="sm"
+                      onClick={() => updateSessionStatus(selectedSession.id, 'zakazana')}
+                      className="bg-yellow-500 hover:bg-yellow-600 text-white"
+                    >
+                      Zakazana
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => updateSessionStatus(selectedSession.id, 'odrađena')}
+                      className="bg-green-500 hover:bg-green-600 text-white"
+                    >
+                      Prisustvovao
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => updateSessionStatus(selectedSession.id, 'propuštena')}
+                      className="bg-gray-500 hover:bg-gray-600 text-white"
+                    >
+                      Nije bio
+                    </Button>
+                  </div>
+                </div>
+              )}
 
               {selectedSession.notes && (
                 <div className="bg-slate-50 rounded-lg p-3">
@@ -313,19 +371,6 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
               )}
 
               <div className="flex space-x-2 pt-4">
-                {selectedSession.status === "zakazana" && (
-                  <Button
-                    onClick={() => {
-                      markAsCompleted(selectedSession.id);
-                      setShowSessionModal(false);
-                    }}
-                    className="flex-1 bg-green-500 hover:bg-green-600 text-white"
-                    disabled={updateSession.isPending}
-                  >
-                    <Check className="w-4 h-4 mr-2" />
-                    Označi kao završeno
-                  </Button>
-                )}
                 <Button
                   variant="outline"
                   onClick={() => {

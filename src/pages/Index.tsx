@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { DashboardStats } from "@/components/DashboardStats";
 import { PatientsList } from "@/components/PatientsList";
@@ -10,7 +11,7 @@ import { ScheduleTherapyForm } from "@/components/ScheduleTherapyForm";
 import { EditPatientForm } from "@/components/EditPatientForm";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
-import { Patient } from "@/lib/supabase";
+import { Patient } from "@/lib/localDatabase";
 
 const Index = () => {
   const [activeView, setActiveView] = useState("dashboard");
@@ -21,6 +22,14 @@ const Index = () => {
   const [showScheduleTherapy, setShowScheduleTherapy] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  // Listen for data changes to refresh components
+  useEffect(() => {
+    const handleDataChange = () => setRefreshKey(prev => prev + 1);
+    window.addEventListener('dataChanged', handleDataChange);
+    return () => window.removeEventListener('dataChanged', handleDataChange);
+  }, []);
 
   const handleDeleteConfirm = (action: () => void) => {
     setConfirmAction(() => action);
@@ -40,6 +49,7 @@ const Index = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-8">
                 <PatientsList 
+                  key={`patients-${refreshKey}`}
                   onPatientSelect={setSelectedPatient}
                   onAddPatient={() => setShowAddPatient(true)}
                   onEditPatient={(patient) => {
@@ -49,12 +59,13 @@ const Index = () => {
                   onDeleteConfirm={handleDeleteConfirm}
                 />
                 <TherapyCalendar 
+                  key={`calendar-${refreshKey}`}
                   onScheduleTherapy={() => setShowScheduleTherapy(true)}
                   onDeleteConfirm={handleDeleteConfirm}
                 />
               </div>
               <div>
-                <DashboardStats />
+                <DashboardStats key={`stats-${refreshKey}`} />
               </div>
             </div>
           </div>
@@ -62,6 +73,7 @@ const Index = () => {
       case "patients":
         return selectedPatient ? (
           <PatientProfile 
+            key={`profile-${refreshKey}-${selectedPatient.id}`}
             patient={selectedPatient} 
             onBack={() => setSelectedPatient(null)}
             onAddTreatment={() => setShowAddTreatment(true)}
@@ -70,6 +82,7 @@ const Index = () => {
           />
         ) : (
           <PatientsList 
+            key={`patients-full-${refreshKey}`}
             onPatientSelect={setSelectedPatient}
             onAddPatient={() => setShowAddPatient(true)}
             onEditPatient={(patient) => {
@@ -81,9 +94,16 @@ const Index = () => {
           />
         );
       case "therapies":
-        return <TherapyCalendar onScheduleTherapy={() => setShowScheduleTherapy(true)} onDeleteConfirm={handleDeleteConfirm} fullView={true} />;
+        return (
+          <TherapyCalendar 
+            key={`therapies-full-${refreshKey}`}
+            onScheduleTherapy={() => setShowScheduleTherapy(true)} 
+            onDeleteConfirm={handleDeleteConfirm} 
+            fullView={true} 
+          />
+        );
       case "statistics":
-        return <DashboardStats fullView={true} />;
+        return <DashboardStats key={`stats-full-${refreshKey}`} fullView={true} />;
       default:
         return <div>Stranica nije pronađena</div>;
     }

@@ -1,93 +1,92 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase, type TherapySession } from '@/lib/supabase';
+
+import { useState, useEffect } from 'react';
+import { localDB, TherapySession } from '@/lib/localDatabase';
 import { toast } from 'sonner';
 
 export const useTherapySessions = () => {
-  return useQuery({
-    queryKey: ['therapy-sessions'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('therapy_sessions')
-        .select(`
-          *,
-          patient:patients(*)
-        `)
-        .order('date', { ascending: false })
-        .order('time', { ascending: false });
-      
-      if (error) throw error;
-      return data as TherapySession[];
-    },
-  });
+  const [data, setData] = useState<TherapySession[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadSessions = () => {
+    try {
+      const sessions = localDB.getTherapySessions();
+      setData(sessions);
+    } catch (error) {
+      console.error('Greška pri učitavanju sesija:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadSessions();
+    
+    const handleDataChange = () => loadSessions();
+    window.addEventListener('dataChanged', handleDataChange);
+    
+    return () => window.removeEventListener('dataChanged', handleDataChange);
+  }, []);
+
+  return {
+    data,
+    isLoading,
+    refetch: loadSessions
+  };
 };
 
 export const useCreateTherapySession = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (session: Omit<TherapySession, 'id' | 'created_at' | 'updated_at' | 'patient'>) => {
-      const { data, error } = await supabase
-        .from('therapy_sessions')
-        .insert([session])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['therapy-sessions'] });
+  const [isPending, setIsPending] = useState(false);
+
+  const mutate = async (session: Omit<TherapySession, 'id' | 'created_at' | 'updated_at' | 'patient'>) => {
+    setIsPending(true);
+    try {
+      localDB.addTherapySession(session);
       toast.success('Terapijska sesija je uspešno zakazana!');
-    },
-    onError: (error) => {
-      toast.error('Greška pri zakazivanju sesije: ' + error.message);
-    },
-  });
+      window.dispatchEvent(new CustomEvent('dataChanged'));
+    } catch (error) {
+      toast.error('Greška pri zakazivanju sesije');
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  return { mutate, isPending };
 };
 
 export const useUpdateTherapySession = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async ({ id, ...updates }: Partial<TherapySession> & { id: string }) => {
-      const { data, error } = await supabase
-        .from('therapy_sessions')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['therapy-sessions'] });
+  const [isPending, setIsPending] = useState(false);
+
+  const mutate = async ({ id, ...updates }: Partial<TherapySession> & { id: string }) => {
+    setIsPending(true);
+    try {
+      localDB.updateTherapySession(id, updates);
       toast.success('Sesija je ažurirana!');
-    },
-    onError: (error) => {
-      toast.error('Greška pri ažuriranju sesije: ' + error.message);
-    },
-  });
+      window.dispatchEvent(new CustomEvent('dataChanged'));
+    } catch (error) {
+      toast.error('Greška pri ažuriranju sesije');
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  return { mutate, isPending };
 };
 
 export const useDeleteTherapySession = () => {
-  const queryClient = useQueryClient();
-  
-  return useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('therapy_sessions')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['therapy-sessions'] });
+  const [isPending, setIsPending] = useState(false);
+
+  const mutate = async (id: string) => {
+    setIsPending(true);
+    try {
+      localDB.deleteTherapySession(id);
       toast.success('Sesija je uspešno obrisana!');
-    },
-    onError: (error) => {
-      toast.error('Greška pri brisanju sesije: ' + error.message);
-    },
-  });
+      window.dispatchEvent(new CustomEvent('dataChanged'));
+    } catch (error) {
+      toast.error('Greška pri brisanju sesije');
+    } finally {
+      setIsPending(false);
+    }
+  };
+
+  return { mutate, isPending };
 };
