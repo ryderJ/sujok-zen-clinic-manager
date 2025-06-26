@@ -1,11 +1,11 @@
+
 import { useState } from "react";
 import { Plus, Search, Phone, Mail, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
-import { usePatients, useUpdatePatient, useDeletePatient } from "@/hooks/usePatients";
-import { useTherapySessions } from "@/hooks/useTherapySessions";
-import { Patient } from "@/lib/localDatabase";
+import { usePatients, useSessions } from "@/hooks/useDatabase";
+import { Patient } from "@/lib/database";
 
 interface PatientsListProps {
   onPatientSelect: (patient: Patient) => void;
@@ -24,10 +24,8 @@ export const PatientsList = ({
 }: PatientsListProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   
-  const { data: patients = [], isLoading } = usePatients();
-  const { data: sessions = [] } = useTherapySessions();
-  const updatePatient = useUpdatePatient();
-  const deletePatient = useDeletePatient();
+  const { patients, loading, updatePatient, deletePatient } = usePatients();
+  const { sessions } = useSessions();
   
   const filteredPatients = patients.filter(patient =>
     patient.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -38,16 +36,13 @@ export const PatientsList = ({
 
   const handleDeletePatient = (patientId: string) => {
     const deleteAction = () => {
-      deletePatient.mutate(patientId);
+      deletePatient(patientId);
     };
     onDeleteConfirm(deleteAction);
   };
 
   const togglePatientStatus = (patient: Patient) => {
-    updatePatient.mutate({
-      id: patient.id,
-      is_active: !patient.is_active
-    });
+    updatePatient(patient.id, { is_active: !patient.is_active });
   };
 
   const getPatientSessionCount = (patientId: string) => {
@@ -119,7 +114,6 @@ export const PatientsList = ({
               <Switch
                 checked={patient.is_active}
                 onCheckedChange={() => togglePatientStatus(patient)}
-                disabled={updatePatient.isPending}
               />
               <span className="text-xs text-slate-500">Status</span>
             </div>
@@ -142,7 +136,6 @@ export const PatientsList = ({
                 handleDeletePatient(patient.id);
               }}
               className="text-red-600 hover:text-red-700 hover:bg-red-50"
-              disabled={deletePatient.isPending}
             >
               <Trash2 className="w-4 h-4" />
             </Button>
@@ -152,7 +145,7 @@ export const PatientsList = ({
     );
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="bg-white rounded-2xl p-6 border border-slate-200">
         <div className="flex items-center justify-center py-8">
@@ -187,7 +180,6 @@ export const PatientsList = ({
         </div>
       )}
 
-      {/* Aktivni pacijenti */}
       <div className="space-y-4 mb-6">
         <h3 className="font-medium text-slate-700 flex items-center">
           Aktivni pacijenti 
@@ -202,7 +194,6 @@ export const PatientsList = ({
         )}
       </div>
 
-      {/* Neaktivni pacijenti */}
       {(fullView || inactivePatients.length > 0) && (
         <div className="space-y-4 pt-4 border-t border-slate-200">
           <h3 className="font-medium text-slate-700 flex items-center">
