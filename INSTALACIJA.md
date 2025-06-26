@@ -36,7 +36,7 @@ npm install
 npm run dev
 
 # 3. U drugom terminalu pokrenite Electron (kada se dev server pokrene)
-npx wait-on http://localhost:8080 && NODE_ENV=development npx electron public/electron.js
+npx wait-on http://localhost:8080 && NODE_ENV=development npx electron public/electron.cjs
 ```
 
 ### Opcija 3: Direktno pokretanje Electron-a
@@ -45,7 +45,7 @@ npx wait-on http://localhost:8080 && NODE_ENV=development npx electron public/el
 npm install
 
 # 2. Direktno pokrenite Electron aplikaciju
-NODE_ENV=development npx electron public/electron.js
+NODE_ENV=development npx electron public/electron.cjs
 ```
 
 ## 🔧 Kreiranje standalone .app fajla
@@ -70,7 +70,7 @@ npx electron-builder --mac
 
 ### Pokretanje
 - **Najlakši način**: `./start-electron.sh`
-- **Development mod**: `npm run dev` + `npx electron public/electron.js`
+- **Development mod**: `npm run dev` + `npx electron public/electron.cjs`
 - **Produkcijska verzija**: Dvoklikom na .app fajl
 
 ### Funkcionalnosti
@@ -99,7 +99,7 @@ npm run dev
 npm run build
 
 # Direktno pokretanje Electron-a
-npx electron public/electron.js
+npx electron public/electron.cjs
 
 # Kreiranje macOS aplikacije
 npx electron-builder --mac
@@ -116,7 +116,7 @@ npx electron-builder --mac --publish=never
 # Restartujte Terminal nakon instalacije
 ```
 
-### Problem: "Aplikacija se ne pokretается"
+### Problem: "Aplikacija se ne pokretається"
 ```bash
 # Obavezno instalirajte zavisnosti prvo sa npm (ne sa bun)
 npm install
@@ -145,7 +145,7 @@ npm install
 ### Problem: "Missing script"
 ```bash
 # Koristite direktne komande umesto npm run
-npx electron public/electron.js
+npx electron public/electron.cjs
 
 # Ili koristite automatski script
 ./start-electron.sh

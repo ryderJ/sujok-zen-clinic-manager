@@ -32,7 +32,7 @@ npx wait-on http://localhost:8080
 
 # Pokretanje Electron aplikacije
 echo "✅ Pokretam Electron aplikaciju..."
-NODE_ENV=development npx electron public/electron.js
+NODE_ENV=development npx electron public/electron.cjs
 
 # Zatvaranje Vite servera kada se Electron zatvori
 kill $VITE_PID 2>/dev/null
