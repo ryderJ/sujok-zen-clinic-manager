@@ -21,6 +21,18 @@ if [ ! -d "node_modules" ]; then
     npm install
 fi
 
-# Pokretanje aplikacije
-echo "✅ Pokretam aplicaciju..."
-npm run electron-dev
+# Pokretanje Vite dev servera u pozadini
+echo "🔧 Pokretam Vite dev server..."
+npm run dev &
+VITE_PID=$!
+
+# Čeka da se Vite server pokrene
+echo "⏳ Čekam da se dev server pokrene..."
+npx wait-on http://localhost:8080
+
+# Pokretanje Electron aplikacije
+echo "✅ Pokretam Electron aplikaciju..."
+NODE_ENV=development npx electron public/electron.js
+
+# Zatvaranje Vite servera kada se Electron zatvori
+kill $VITE_PID 2>/dev/null

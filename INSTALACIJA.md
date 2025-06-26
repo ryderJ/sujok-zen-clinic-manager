@@ -14,26 +14,38 @@
 
 ## 🚀 Brza instalacija
 
-### Opcija 1: Direktno pokretanje
+### Opcija 1: Korišćenje automatskog script-a (PREPORUČENO)
 ```bash
 # 1. Otvorite Terminal
 # 2. Navigirajte do foldera sa projektom
 cd putanja/do/therapy-manager
 
-# 3. Instalirajte zavisnosti (koristite npm umesto bun zbog Electron kompatibilnosti)
-npm install
-
-# 4. Pokrenite aplikaciju
-npm run electron-dev
-```
-
-### Opcija 2: Korišćenje script-a
-```bash
-# 1. Učinite script izvršnim
+# 3. Učinite script izvršnim
 chmod +x start-electron.sh
 
-# 2. Pokrenite script
+# 4. Pokrenite aplikaciju jednom komandom
 ./start-electron.sh
+```
+
+### Opcija 2: Manuelno pokretanje
+```bash
+# 1. Instalirajte zavisnosti (koristite npm umesto bun zbog Electron kompatibilnosti)
+npm install
+
+# 2. U jednom terminalu pokrenite dev server
+npm run dev
+
+# 3. U drugom terminalu pokrenite Electron (kada se dev server pokrene)
+npx wait-on http://localhost:8080 && NODE_ENV=development npx electron public/electron.js
+```
+
+### Opcija 3: Direktno pokretanje Electron-a
+```bash
+# 1. Instalirajte zavisnosti
+npm install
+
+# 2. Direktno pokrenite Electron aplikaciju
+NODE_ENV=development npx electron public/electron.js
 ```
 
 ## 🔧 Kreiranje standalone .app fajla
@@ -48,7 +60,7 @@ npm install
 npm run build
 
 # 3. Kreirajte macOS aplikaciju
-npm run electron-pack
+npx electron-builder --mac
 
 # 4. Aplikacija će biti kreirana u dist/ folderu
 # Možete je premestiti u Applications folder
@@ -57,7 +69,8 @@ npm run electron-pack
 ## 📱 Korišćenje aplikacije
 
 ### Pokretanje
-- **Development mod**: `npm run electron-dev`
+- **Najlakši način**: `./start-electron.sh`
+- **Development mod**: `npm run dev` + `npx electron public/electron.js`
 - **Produkcijska verzija**: Dvoklikom na .app fajl
 
 ### Funkcionalnosti
@@ -73,20 +86,26 @@ npm run electron-pack
 - Lokacija: `~/Library/Application Support/Su Jok Therapy Manager/`
 - Automatski backup pri svakom unosu
 
-## 🛠 Komandne skripte
+## 🛠 Dostupne komande
 
 ```bash
-# Pokretanje u development modu
-npm run electron-dev
+# Pokretanje aplikacije (automatski script)
+./start-electron.sh
+
+# Pokretanje dev servera
+npm run dev
 
 # Kreiranje produkcijske verzije
 npm run build
 
+# Direktno pokretanje Electron-a
+npx electron public/electron.js
+
 # Kreiranje macOS aplikacije
-npm run electron-pack
+npx electron-builder --mac
 
 # Kreiranje DMG fajla za distribuciju
-npm run electron-dist
+npx electron-builder --mac --publish=never
 ```
 
 ## 🔍 Rešavanje problema
@@ -104,6 +123,10 @@ npm install
 
 # Proverite da li je port 8080 slobodan
 lsof -ti:8080 | xargs kill -9
+
+# Pokušajte sa automatskim script-om
+chmod +x start-electron.sh
+./start-electron.sh
 ```
 
 ### Problem: "Permission denied"
@@ -119,13 +142,23 @@ rm -rf node_modules
 npm install
 ```
 
+### Problem: "Missing script"
+```bash
+# Koristite direktne komande umesto npm run
+npx electron public/electron.js
+
+# Ili koristite automatski script
+./start-electron.sh
+```
+
 ## 📞 Podrška
 
 Ako imate problema sa instalacijom:
 1. Proverite da li imate najnoviju verziju Node.js
 2. Obavezno pokrenite `npm install` (ne `bun install`) pre prvog pokretanja
-3. Restartujte Terminal ako se pojave greške
-4. Za Electron projekte uvek koristite npm
+3. Koristite `./start-electron.sh` za najlakše pokretanje
+4. Restartujte Terminal ako se pojave greške
+5. Za Electron projekte uvek koristite npm
 
 ---
 
