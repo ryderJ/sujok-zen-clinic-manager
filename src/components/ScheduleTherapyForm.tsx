@@ -1,56 +1,40 @@
+
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { usePatients } from "@/hooks/usePatients";
-import { useCreateTherapySession } from "@/hooks/useTherapySessions";
+import { usePatients, useSessions } from "@/hooks/useDatabase";
 
 interface ScheduleTherapyFormProps {
   onClose: () => void;
 }
 
-const therapyTypes = [
-  "Su Jok terapija",
-  "Akupresura sesija",
-  "Inicijalna konsultacija",
-  "Kontrolna sesija",
-  "Refleksologija"
-];
-
 export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
   const [formData, setFormData] = useState({
     patient_id: "",
     date: "",
-    time: "",
-    type: "",
-    duration: 45,
     notes: ""
   });
 
-  const { data: patients = [] } = usePatients();
-  const createSession = useCreateTherapySession();
+  const { patients } = usePatients();
+  const { addSession } = useSessions();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    createSession.mutate({
+    addSession({
       patient_id: formData.patient_id,
       date: formData.date,
-      time: formData.time,
-      type: formData.type,
-      duration: formData.duration,
       status: 'zakazana',
       notes: formData.notes || undefined
     });
     
-    if (!createSession.isPending) {
-      onClose();
-    }
+    onClose();
   };
 
-  const handleChange = (field: string, value: string | number) => {
+  const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
@@ -81,55 +65,13 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
             </Select>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="date">Datum *</Label>
-              <Input
-                id="date"
-                type="date"
-                value={formData.date}
-                onChange={(e) => handleChange("date", e.target.value)}
-                className="rounded-xl"
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="time">Vreme *</Label>
-              <Input
-                id="time"
-                type="time"
-                value={formData.time}
-                onChange={(e) => handleChange("time", e.target.value)}
-                className="rounded-xl"
-                required
-              />
-            </div>
-          </div>
-
           <div>
-            <Label htmlFor="therapyType">Tip terapije *</Label>
-            <Select value={formData.type} onValueChange={(value) => handleChange("type", value)}>
-              <SelectTrigger className="w-full rounded-xl">
-                <SelectValue placeholder="Odaberi tip terapije" />
-              </SelectTrigger>
-              <SelectContent>
-                {therapyTypes.map((type) => (
-                  <SelectItem key={type} value={type}>
-                    {type}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label htmlFor="duration">Trajanje (minuti) *</Label>
+            <Label htmlFor="date">Datum *</Label>
             <Input
-              id="duration"
-              type="number"
-              value={formData.duration}
-              onChange={(e) => handleChange("duration", parseInt(e.target.value))}
-              placeholder="45"
+              id="date"
+              type="date"
+              value={formData.date}
+              onChange={(e) => handleChange("date", e.target.value)}
               className="rounded-xl"
               required
             />
@@ -153,16 +95,14 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
               variant="outline" 
               onClick={onClose} 
               className="flex-1 rounded-xl"
-              disabled={createSession.isPending}
             >
               Otkaži
             </Button>
             <Button 
               type="submit" 
               className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
-              disabled={createSession.isPending}
             >
-              {createSession.isPending ? 'Zakazujem...' : 'Zakaži sesiju'}
+              Zakaži sesiju
             </Button>
           </div>
         </form>

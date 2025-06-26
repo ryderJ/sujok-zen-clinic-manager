@@ -1,9 +1,10 @@
+
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useCreatePatient } from "@/hooks/usePatients";
+import { usePatients } from "@/hooks/useDatabase";
 
 interface AddPatientFormProps {
   onClose: () => void;
@@ -15,26 +16,24 @@ export const AddPatientForm = ({ onClose }: AddPatientFormProps) => {
     date_of_birth: "",
     phone: "",
     email: "",
-    conditions: ""
+    notes: ""
   });
 
-  const createPatient = useCreatePatient();
+  const { addPatient } = usePatients();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    createPatient.mutate({
+    addPatient({
       name: formData.name,
       date_of_birth: formData.date_of_birth,
       phone: formData.phone,
       email: formData.email || undefined,
-      conditions: formData.conditions || undefined,
+      notes: formData.notes || undefined,
       is_active: true
     });
     
-    if (!createPatient.isPending) {
-      onClose();
-    }
+    onClose();
   };
 
   const handleChange = (field: string, value: string) => {
@@ -102,11 +101,11 @@ export const AddPatientForm = ({ onClose }: AddPatientFormProps) => {
           </div>
 
           <div>
-            <Label htmlFor="conditions">Zdravstveno stanje i napomene</Label>
+            <Label htmlFor="notes">Zdravstveno stanje i napomene</Label>
             <textarea
-              id="conditions"
-              value={formData.conditions}
-              onChange={(e) => handleChange("conditions", e.target.value)}
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => handleChange("notes", e.target.value)}
               placeholder="Unesite zdravstveno stanje, alergije ili napomene..."
               className="w-full px-3 py-2 rounded-xl border border-slate-200 resize-none"
               rows={3}
@@ -119,16 +118,14 @@ export const AddPatientForm = ({ onClose }: AddPatientFormProps) => {
               variant="outline" 
               onClick={onClose} 
               className="flex-1 rounded-xl"
-              disabled={createPatient.isPending}
             >
               Otkaži
             </Button>
             <Button 
               type="submit" 
               className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
-              disabled={createPatient.isPending}
             >
-              {createPatient.isPending ? 'Dodajem...' : 'Dodaj pacijenta'}
+              Dodaj pacijenta
             </Button>
           </div>
         </form>

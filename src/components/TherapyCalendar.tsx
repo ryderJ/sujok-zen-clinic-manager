@@ -1,9 +1,9 @@
+
 import { useState } from "react";
-import { Plus, Clock, CheckCircle, Calendar as CalendarIcon, Trash2, Check, Filter, User, Search, X, Edit, UserX } from "lucide-react";
+import { Plus, Clock, CheckCircle, Calendar as CalendarIcon, Trash2, Check, Filter, User, Search, Edit, UserX } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { useTherapySessions, useUpdateTherapySession, useDeleteTherapySession } from "@/hooks/useTherapySessions";
-import { SessionEditModal } from "./SessionEditModal";
+import { usePatients, useSessions } from "@/hooks/useDatabase";
 
 interface TherapyCalendarProps {
   onScheduleTherapy: () => void;
@@ -14,14 +14,12 @@ interface TherapyCalendarProps {
 export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView = false }: TherapyCalendarProps) => {
   const [selectedSession, setSelectedSession] = useState<any>(null);
   const [showSessionModal, setShowSessionModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
   const [dateFilter, setDateFilter] = useState("");
   const [patientFilter, setPatientFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
 
-  const { data: sessions = [], isLoading } = useTherapySessions();
-  const updateSession = useUpdateTherapySession();
-  const deleteSession = useDeleteTherapySession();
+  const { sessions, updateSession, deleteSession } = useSessions();
+  const { patients } = usePatients();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -29,7 +27,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
         return "bg-green-100 text-green-800 border-green-200";
       case "zakazana":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "propuštena":
+      case "otkazana":
         return "bg-gray-100 text-gray-800 border-gray-200";
       default:
         return "bg-slate-100 text-slate-800 border-slate-200";
@@ -42,7 +40,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
         return <CheckCircle className="w-4 h-4" />;
       case "zakazana":
         return <Clock className="w-4 h-4" />;
-      case "propuštena":
+      case "otkazana":
         return <UserX className="w-4 h-4" />;
       default:
         return <Clock className="w-4 h-4" />;
@@ -51,44 +49,37 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
 
   const handleDeleteSession = (sessionId: string) => {
     const deleteAction = () => {
-      deleteSession.mutate(sessionId);
+      deleteSession(sessionId);
     };
     onDeleteConfirm(deleteAction);
   };
 
-  const updateSessionStatus = (sessionId: string, status: 'odrađena' | 'propuštena' | 'zakazana') => {
-    updateSession.mutate({
-      id: sessionId,
-      status
-    });
+  const updateSessionStatus = (sessionId: string, status: 'odrađena' | 'otkazana' | 'zakazana') => {
+    updateSession(sessionId, { status });
     if (selectedSession && selectedSession.id === sessionId) {
       setSelectedSession({...selectedSession, status});
     }
   };
 
   const openSessionModal = (session: any) => {
-    setSelectedSession(session);
+    const patient = patients.find(p => p.id === session.patient_id);
+    setSelectedSession({ ...session, patient });
     setShowSessionModal(true);
-  };
-
-  const openEditModal = (session: any) => {
-    setSelectedSession(session);
-    setShowEditModal(true);
-    setShowSessionModal(false);
   };
 
   // Filter and sort sessions
   const filteredSessions = sessions
     .filter(session => {
       const matchesDate = !dateFilter || session.date.includes(dateFilter);
+      const patient = patients.find(p => p.id === session.patient_id);
       const matchesPatient = !patientFilter || 
-        session.patient?.name.toLowerCase().includes(patientFilter.toLowerCase());
+        patient?.name.toLowerCase().includes(patientFilter.toLowerCase());
       const matchesStatus = !statusFilter || session.status === statusFilter;
       return matchesDate && matchesPatient && matchesStatus;
     })
     .sort((a, b) => {
-      const dateA = new Date(`${a.date} ${a.time}`).getTime();
-      const dateB = new Date(`${b.date} ${b.time}`).getTime();
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
       return dateA - dateB;
     });
 
@@ -107,83 +98,64 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
     return session.date < today;
   });
 
-  const renderSession = (session: any) => (
-    <div key={session.id} className="p-4 rounded-xl border border-slate-200 hover:border-blue-200 transition-colors cursor-pointer"
-         onClick={() => openSessionModal(session)}>
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <div className="flex items-center space-x-3 mb-2">
-            <span className="font-semibold text-slate-800">
-              {fullView ? `${new Date(session.date).toLocaleDateString('sr-RS')} u ${session.time}` : session.time}
-            </span>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(session.status)}`}>
-              {getStatusIcon(session.status)}
-              <span className="capitalize">{session.status}</span>
-            </span>
-          </div>
-          <p className="text-slate-700 font-medium">{session.patient?.name}</p>
-          <p className="text-sm text-slate-500">{session.type} • {session.duration} min</p>
-          {session.notes && (
-            <p className="text-xs text-slate-400 mt-1 truncate">{session.notes}</p>
-          )}
-        </div>
-        <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
-          {session.status === "zakazana" && (
-            <>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => updateSessionStatus(session.id, 'odrađena')}
-                className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                title="Bio na terapiji"
-                disabled={updateSession.isPending}
-              >
-                <Check className="w-4 h-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => updateSessionStatus(session.id, 'propuštena')}
-                className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
-                title="Nije bio na terapiji"
-                disabled={updateSession.isPending}
-              >
-                <UserX className="w-4 h-4" />
-              </Button>
-            </>
-          )}
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => openEditModal(session)}
-            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-            title="Izmeni"
-          >
-            <Edit className="w-4 h-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDeleteSession(session.id)}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-            disabled={deleteSession.isPending}
-          >
-            <Trash2 className="w-4 h-4" />
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-
-  if (isLoading) {
+  const renderSession = (session: any) => {
+    const patient = patients.find(p => p.id === session.patient_id);
+    
     return (
-      <div className="bg-white rounded-2xl p-6 border border-slate-200">
-        <div className="flex items-center justify-center py-8">
-          <div className="text-slate-500">Učitavam sesije...</div>
+      <div key={session.id} className="p-4 rounded-xl border border-slate-200 hover:border-blue-200 transition-colors cursor-pointer"
+           onClick={() => openSessionModal(session)}>
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <div className="flex items-center space-x-3 mb-2">
+              <span className="font-semibold text-slate-800">
+                {fullView ? `${new Date(session.date).toLocaleDateString('sr-RS')}` : new Date(session.date).toLocaleDateString('sr-RS')}
+              </span>
+              <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(session.status)}`}>
+                {getStatusIcon(session.status)}
+                <span className="capitalize">{session.status}</span>
+              </span>
+            </div>
+            <p className="text-slate-700 font-medium">{patient?.name || 'Nepoznat pacijent'}</p>
+            {session.notes && (
+              <p className="text-xs text-slate-400 mt-1 truncate">{session.notes}</p>
+            )}
+          </div>
+          <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
+            {session.status === "zakazana" && (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateSessionStatus(session.id, 'odrađena')}
+                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                  title="Bio na terapiji"
+                >
+                  <Check className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateSessionStatus(session.id, 'otkazana')}
+                  className="text-gray-600 hover:text-gray-700 hover:bg-gray-50"
+                  title="Otkaži sesiju"
+                >
+                  <UserX className="w-4 h-4" />
+                </Button>
+              </>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDeleteSession(session.id)}
+              className="text-red-600 hover:text-red-700 hover:bg-red-50"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
       </div>
     );
-  }
+  };
 
   return (
     <>
@@ -239,7 +211,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
                   <option value="">Svi statusi</option>
                   <option value="zakazana">Zakazana</option>
                   <option value="odrađena">Odrađena</option>
-                  <option value="propuštena">Propuštena</option>
+                  <option value="otkazana">Otkazana</option>
                 </select>
               </div>
             </div>
@@ -313,8 +285,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
               <div className="flex items-center space-x-3">
                 <User className="w-5 h-5 text-slate-500" />
                 <div>
-                  <p className="font-medium text-slate-800">{selectedSession.patient?.name}</p>
-                  <p className="text-sm text-slate-500">{selectedSession.type}</p>
+                  <p className="font-medium text-slate-800">{selectedSession.patient?.name || 'Nepoznat pacijent'}</p>
                 </div>
               </div>
               
@@ -322,9 +293,8 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
                 <CalendarIcon className="w-5 h-5 text-slate-500" />
                 <div>
                   <p className="font-medium text-slate-800">
-                    {new Date(selectedSession.date).toLocaleDateString('sr-RS')} u {selectedSession.time}
+                    {new Date(selectedSession.date).toLocaleDateString('sr-RS')}
                   </p>
-                  <p className="text-sm text-slate-500">{selectedSession.duration} minuta</p>
                 </div>
               </div>
 
@@ -354,7 +324,6 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
                     setShowSessionModal(false);
                   }}
                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                  disabled={deleteSession.isPending}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
                   Obriši
@@ -364,15 +333,6 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
           )}
         </DialogContent>
       </Dialog>
-      
-      {/* Session Edit Modal */}
-      {selectedSession && (
-        <SessionEditModal
-          session={selectedSession}
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-        />
-      )}
     </>
   );
 };

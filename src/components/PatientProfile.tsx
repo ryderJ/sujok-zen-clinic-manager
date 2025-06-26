@@ -1,10 +1,8 @@
 
-import { ArrowLeft, Plus, Download, Camera, Edit, Trash2, Calendar, Clock } from "lucide-react";
+import { ArrowLeft, Plus, Download, Edit, Trash2, Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { exportPatientToPDF } from "@/utils/pdfExport";
-import { useTherapySessions } from "@/hooks/useTherapySessions";
-import { useTreatments, useDeleteTreatment } from "@/hooks/useTreatments";
-import { Patient } from "@/lib/localDatabase";
+import { usePatients, useSessions, useTreatments } from "@/hooks/useDatabase";
+import { Patient } from "@/lib/database";
 
 interface PatientProfileProps {
   patient: Patient;
@@ -21,22 +19,18 @@ export const PatientProfile = ({
   onEditPatient, 
   onDeleteConfirm 
 }: PatientProfileProps) => {
-  const { data: allSessions = [] } = useTherapySessions();
-  const { data: treatments = [] } = useTreatments(patient.id);
-  const deleteTreatment = useDeleteTreatment();
+  const { sessions } = useSessions();
+  const { treatments, deleteTreatment } = useTreatments();
 
-  // Filter sessions for this patient
-  const patientSessions = allSessions.filter(session => session.patient_id === patient.id);
+  // Filter sessions and treatments for this patient
+  const patientSessions = sessions.filter(session => session.patient_id === patient.id);
+  const patientTreatments = treatments.filter(treatment => treatment.patient_id === patient.id);
   
   const handleDeleteTreatment = (treatmentId: string) => {
     const deleteAction = () => {
-      deleteTreatment.mutate(treatmentId);
+      deleteTreatment(treatmentId);
     };
     onDeleteConfirm(deleteAction);
-  };
-
-  const handleExportPDF = () => {
-    exportPatientToPDF(patient, treatments);
   };
 
   const getSessionStatusColor = (status: string) => {
@@ -45,7 +39,7 @@ export const PatientProfile = ({
         return "bg-green-100 text-green-800 border-green-200";
       case "zakazana":
         return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "propuštena":
+      case "otkazana":
         return "bg-gray-100 text-gray-800 border-gray-200";
       default:
         return "bg-slate-100 text-slate-800 border-slate-200";
@@ -54,7 +48,7 @@ export const PatientProfile = ({
 
   const completedSessions = patientSessions.filter(s => s.status === "odrađena").length;
   const totalSessions = patientSessions.length;
-  const missedSessions = patientSessions.filter(s => s.status === "propuštena").length;
+  const cancelledSessions = patientSessions.filter(s => s.status === "otkazana").length;
 
   return (
     <div className="space-y-6">
@@ -93,14 +87,6 @@ export const PatientProfile = ({
             </div>
           </div>
           <div className="flex space-x-3">
-            <Button 
-              onClick={handleExportPDF}
-              variant="outline" 
-              className="rounded-xl"
-            >
-              <Download className="w-4 h-4 mr-2" />
-              Izvezi PDF
-            </Button>
             <Button 
               onClick={onEditPatient}
               variant="outline" 
@@ -173,8 +159,8 @@ export const PatientProfile = ({
                 <span className="text-gray-600 font-bold text-sm">X</span>
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-600">{missedSessions}</p>
-                <p className="text-sm text-slate-600">Propuštene sesije</p>
+                <p className="text-2xl font-bold text-gray-600">{cancelledSessions}</p>
+                <p className="text-sm text-slate-600">Otkazane sesije</p>
               </div>
             </div>
           </div>
@@ -206,8 +192,9 @@ export const PatientProfile = ({
                       <span className="font-medium text-slate-800">
                         {new Date(session.date).toLocaleDateString('sr-RS')}
                       </span>
-                      <span className="text-slate-600">{session.time}</span>
-                      <span className="text-sm text-slate-500">{session.type}</span>
+                      {session.notes && (
+                        <span className="text-sm text-slate-500">{session.notes}</span>
+                      )}
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getSessionStatusColor(session.status)}`}>
                       {session.status}
@@ -219,12 +206,12 @@ export const PatientProfile = ({
         )}
       </div>
 
-      {/* Health Conditions */}
-      {patient.conditions && (
+      {/* Health Notes */}
+      {patient.notes && (
         <div className="bg-white rounded-2xl p-6 border border-slate-200">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Zdravstveno stanje i napomene</h2>
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-            <p className="text-slate-700">{patient.conditions}</p>
+            <p className="text-slate-700">{patient.notes}</p>
           </div>
         </div>
       )}
@@ -234,15 +221,15 @@ export const PatientProfile = ({
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-slate-800">Istorija tretmana</h2>
           <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-            {treatments.length} tretmana
+            {patientTreatments.length} tretmana
           </div>
         </div>
 
-        {treatments.length > 0 ? (
+        {patientTreatments.length > 0 ? (
           <div className="space-y-6">
-            {treatments.map((treatment, index) => (
+            {patientTreatments.map((treatment, index) => (
               <div key={treatment.id} className="border-l-4 border-blue-200 pl-6 pb-6 relative">
-                {index < treatments.length - 1 && (
+                {index < patientTreatments.length - 1 && (
                   <div className="absolute left-0 top-8 w-px h-full bg-slate-200"></div>
                 )}
                 
@@ -255,7 +242,7 @@ export const PatientProfile = ({
                         {new Date(treatment.date).toLocaleDateString('sr-RS')}
                       </span>
                       <span className="text-sm text-slate-500">
-                        {treatment.duration} minuta
+                        {treatment.type}
                       </span>
                     </div>
                     <div className="flex space-x-2">
@@ -264,35 +251,13 @@ export const PatientProfile = ({
                         size="sm"
                         onClick={() => handleDeleteTreatment(treatment.id)}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        disabled={deleteTreatment.isPending}
                       >
                         <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
                   
-                  <h3 className="font-medium text-slate-800 mb-2">{treatment.description}</h3>
-                  {treatment.notes && (
-                    <p className="text-sm text-slate-600 mb-4">{treatment.notes}</p>
-                  )}
-                  
-                  {treatment.photos.length > 0 && (
-                    <div>
-                      <h4 className="text-sm font-medium text-slate-700 mb-2 flex items-center">
-                        <Camera className="w-4 h-4 mr-1" />
-                        Fotografije ({treatment.photos.length})
-                      </h4>
-                      <div className="flex space-x-2">
-                        {treatment.photos.map((photo, photoIndex) => (
-                          <div key={photoIndex} className="w-16 h-16 bg-slate-200 rounded-lg overflow-hidden">
-                            <div className="w-full h-full bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center">
-                              <Camera className="w-6 h-6 text-blue-500" />
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
+                  <p className="text-sm text-slate-600">{treatment.description}</p>
                 </div>
               </div>
             ))}

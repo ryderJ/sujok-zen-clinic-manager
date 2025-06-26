@@ -1,10 +1,11 @@
+
 import { useState } from "react";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useUpdatePatient } from "@/hooks/usePatients";
-import { Patient } from "@/lib/supabase";
+import { usePatients } from "@/hooks/useDatabase";
+import { Patient } from "@/lib/database";
 
 interface EditPatientFormProps {
   patient: Patient;
@@ -18,26 +19,26 @@ export const EditPatientForm = ({ patient, onClose, onSave }: EditPatientFormPro
     date_of_birth: patient.date_of_birth || "",
     phone: patient.phone || "",
     email: patient.email || "",
-    conditions: patient.conditions || ""
+    notes: patient.notes || ""
   });
 
-  const updatePatient = useUpdatePatient();
+  const { updatePatient } = usePatients();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    updatePatient.mutate({
-      id: patient.id,
+    const updatedPatient = updatePatient(patient.id, {
       name: formData.name,
       date_of_birth: formData.date_of_birth,
       phone: formData.phone,
       email: formData.email || undefined,
-      conditions: formData.conditions || undefined,
+      notes: formData.notes || undefined,
     });
     
-    if (!updatePatient.isPending) {
-      onClose();
+    if (updatedPatient) {
+      onSave(updatedPatient);
     }
+    onClose();
   };
 
   const handleChange = (field: string, value: string) => {
@@ -105,11 +106,11 @@ export const EditPatientForm = ({ patient, onClose, onSave }: EditPatientFormPro
           </div>
 
           <div>
-            <Label htmlFor="conditions">Zdravstveno stanje i napomene</Label>
+            <Label htmlFor="notes">Zdravstveno stanje i napomene</Label>
             <textarea
-              id="conditions"
-              value={formData.conditions}
-              onChange={(e) => handleChange("conditions", e.target.value)}
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => handleChange("notes", e.target.value)}
               placeholder="Unesite zdravstveno stanje, alergije ili napomene..."
               className="w-full px-3 py-2 rounded-xl border border-slate-200 resize-none"
               rows={3}
@@ -122,16 +123,14 @@ export const EditPatientForm = ({ patient, onClose, onSave }: EditPatientFormPro
               variant="outline" 
               onClick={onClose} 
               className="flex-1 rounded-xl"
-              disabled={updatePatient.isPending}
             >
               Otkaži
             </Button>
             <Button 
               type="submit" 
               className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
-              disabled={updatePatient.isPending}
             >
-              {updatePatient.isPending ? 'Čuvam...' : 'Sačuvaj izmene'}
+              Sačuvaj izmene
             </Button>
           </div>
         </form>

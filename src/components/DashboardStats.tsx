@@ -1,14 +1,14 @@
+
 import { Users, Calendar, TrendingUp, Clock } from "lucide-react";
-import { usePatients } from "@/hooks/usePatients";
-import { useTherapySessions } from "@/hooks/useTherapySessions";
+import { usePatients, useSessions } from "@/hooks/useDatabase";
 
 interface DashboardStatsProps {
   fullView?: boolean;
 }
 
 export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
-  const { data: patients = [] } = usePatients();
-  const { data: sessions = [] } = useTherapySessions();
+  const { patients } = usePatients();
+  const { sessions } = useSessions();
 
   const activePatients = patients.filter(p => p.is_active);
   const todaysSessions = sessions.filter(session => {
@@ -24,9 +24,10 @@ export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
     return sessionDate >= weekAgo && sessionDate <= today;
   });
 
-  const averageDuration = sessions.length > 0 
-    ? Math.round(sessions.reduce((sum, session) => sum + session.duration, 0) / sessions.length)
-    : 0;
+  const completedSessions = sessions.filter(s => s.status === 'odrađena');
+  const averageDuration = completedSessions.length > 0 
+    ? Math.round(completedSessions.reduce((sum, session) => sum + 60, 0) / completedSessions.length)
+    : 60;
 
   const stats = [
     {
@@ -100,19 +101,22 @@ export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
         <div className="bg-white rounded-2xl p-6 border border-slate-200">
           <h3 className="font-semibold text-slate-800 mb-4">Nedavne aktivnosti</h3>
           <div className="space-y-3">
-            {recentActivities.map((session, index) => (
-              <div key={session.id} className="flex items-center space-x-3 p-3 rounded-xl bg-slate-50">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium text-slate-700">
-                    Sesija završena sa {session.patient?.name}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    {new Date(session.date).toLocaleDateString('sr-RS')}
-                  </p>
+            {recentActivities.map((session, index) => {
+              const patient = patients.find(p => p.id === session.patient_id);
+              return (
+                <div key={session.id} className="flex items-center space-x-3 p-3 rounded-xl bg-slate-50">
+                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-slate-700">
+                      Sesija završena sa {patient?.name || 'Nepoznat pacijent'}
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      {new Date(session.date).toLocaleDateString('sr-RS')}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
