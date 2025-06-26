@@ -20,7 +20,7 @@
 # 2. Navigirajte do foldera sa projektom
 cd putanja/do/therapy-manager
 
-# 3. Instalirajte zavisnosti
+# 3. Instalirajte zavisnosti (koristite npm umesto bun zbog Electron kompatibilnosti)
 npm install
 
 # 4. Pokrenite aplikaciju
@@ -41,7 +41,7 @@ chmod +x start-electron.sh
 Za kreiranje aplikacije koju možete instalirati na macOS:
 
 ```bash
-# 1. Instalirajte zavisnosti (ako već niste)
+# 1. Instalirajte zavisnosti (koristite npm)
 npm install
 
 # 2. Kreirajte produkcijsku verziju
@@ -97,9 +97,9 @@ npm run electron-dist
 # Restartujte Terminal nakon instalacije
 ```
 
-### Problem: "Aplikacija se ne pokretает"
+### Problem: "Aplikacija se ne pokretается"
 ```bash
-# Obavezno instalirajte zavisnosti prvo
+# Obavezno instalirajte zavisnosti prvo sa npm (ne sa bun)
 npm install
 
 # Proverite da li je port 8080 slobodan
@@ -112,12 +112,20 @@ lsof -ti:8080 | xargs kill -9
 chmod +x start-electron.sh
 ```
 
+### Problem: "Electron installation failed"
+```bash
+# Koristite npm umesto bun za Electron projekte
+rm -rf node_modules
+npm install
+```
+
 ## 📞 Podrška
 
 Ako imate problema sa instalacijom:
 1. Proverite da li imate najnoviju verziju Node.js
-2. Obavezno pokrenite `npm install` pre prvog pokretanja
+2. Obavezno pokrenite `npm install` (ne `bun install`) pre prvog pokretanja
 3. Restartujte Terminal ako se pojave greške
+4. Za Electron projekte uvek koristite npm
 
 ---
 
