@@ -31,13 +31,29 @@ npm install
 npm run dev
 
 # 3. U drugom terminalu pokrenite Electron
-NODE_ENV=development npx electron main.js
+NODE_ENV=development npx electron electron/main.js
+```
+
+## 📦 Kreiranje standalone aplikacije
+
+```bash
+# Za macOS .app fajl
+npm run build
+npx electron-builder --mac
+
+# Za Windows .exe fajl
+npm run build
+npx electron-builder --win
+
+# Za Linux AppImage
+npm run build
+npx electron-builder --linux
 ```
 
 ## 📱 Korišćenje
 
 - Potpuno offline rad
-- Lokalno čuvanje podataka
+- Lokalno čuvanje podataka u localStorage
 - Upravljanje pacijentima
 - Zakazivanje terapija
 - Praćenje tretmana
@@ -55,7 +71,7 @@ NODE_ENV=development npx electron main.js
 chmod +x start-electron.sh
 ```
 
-### Aplikacija se ne pokretává
+### Aplikacija se ne pokreće
 ```bash
 # Obavezno koristite npm (ne bun)
 rm -rf node_modules
