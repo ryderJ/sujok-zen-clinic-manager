@@ -16,14 +16,14 @@ function createWindow() {
       webSecurity: true
     },
     titleBarStyle: 'hiddenInset',
-    icon: path.join(__dirname, 'favicon.ico'),
+    icon: path.join(__dirname, 'public/favicon.ico'),
     show: false
   });
 
   // Učitaj aplikaciju
   const startUrl = isDev 
     ? 'http://localhost:8080' 
-    : `file://${path.join(__dirname, '../dist/index.html')}`;
+    : `file://${path.join(__dirname, './dist/index.html')}`;
   
   mainWindow.loadURL(startUrl);
 

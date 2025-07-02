@@ -28,11 +28,11 @@ VITE_PID=$!
 
 # Čeka da se Vite server pokrene
 echo "⏳ Čekam da se dev server pokrene..."
-npx wait-on http://localhost:8080
+sleep 5
 
 # Pokretanje Electron aplikacije
 echo "✅ Pokretam Electron aplikaciju..."
-NODE_ENV=development npx electron public/electron.cjs
+NODE_ENV=development npx electron main.js
 
 # Zatvaranje Vite servera kada se Electron zatvori
 kill $VITE_PID 2>/dev/null
