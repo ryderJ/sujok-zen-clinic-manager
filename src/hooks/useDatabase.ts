@@ -12,11 +12,22 @@ export const usePatients = () => {
       setLoading(false);
     };
     loadPatients();
+    
+    // Listen for storage changes for real-time updates
+    const handleStorageChange = () => {
+      setPatients(db.getPatients());
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const addPatient = (patientData: Omit<Patient, 'id' | 'created_at'>) => {
     const newPatient = db.addPatient(patientData);
-    setPatients(db.getPatients());
+    const updatedPatients = db.getPatients();
+    setPatients(updatedPatients);
+    // Trigger storage event for other components
+    window.dispatchEvent(new StorageEvent('storage'));
     return newPatient;
   };
 
@@ -24,6 +35,7 @@ export const usePatients = () => {
     const updated = db.updatePatient(id, updates);
     if (updated) {
       setPatients(db.getPatients());
+      window.dispatchEvent(new StorageEvent('storage'));
     }
     return updated;
   };
@@ -32,6 +44,7 @@ export const usePatients = () => {
     const success = db.deletePatient(id);
     if (success) {
       setPatients(db.getPatients());
+      window.dispatchEvent(new StorageEvent('storage'));
     }
     return success;
   };
@@ -53,11 +66,19 @@ export const useSessions = () => {
   useEffect(() => {
     setSessions(db.getSessions());
     setLoading(false);
+    
+    const handleStorageChange = () => {
+      setSessions(db.getSessions());
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const addSession = (sessionData: Omit<TherapySession, 'id' | 'created_at'>) => {
     const newSession = db.addSession(sessionData);
     setSessions(db.getSessions());
+    window.dispatchEvent(new StorageEvent('storage'));
     return newSession;
   };
 
@@ -65,6 +86,7 @@ export const useSessions = () => {
     const updated = db.updateSession(id, updates);
     if (updated) {
       setSessions(db.getSessions());
+      window.dispatchEvent(new StorageEvent('storage'));
     }
     return updated;
   };
@@ -73,6 +95,7 @@ export const useSessions = () => {
     const success = db.deleteSession(id);
     if (success) {
       setSessions(db.getSessions());
+      window.dispatchEvent(new StorageEvent('storage'));
     }
     return success;
   };
@@ -94,11 +117,19 @@ export const useTreatments = () => {
   useEffect(() => {
     setTreatments(db.getTreatments());
     setLoading(false);
+    
+    const handleStorageChange = () => {
+      setTreatments(db.getTreatments());
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
   const addTreatment = (treatmentData: Omit<Treatment, 'id' | 'created_at'>) => {
     const newTreatment = db.addTreatment(treatmentData);
     setTreatments(db.getTreatments());
+    window.dispatchEvent(new StorageEvent('storage'));
     return newTreatment;
   };
 
@@ -106,6 +137,7 @@ export const useTreatments = () => {
     const success = db.deleteTreatment(id);
     if (success) {
       setTreatments(db.getTreatments());
+      window.dispatchEvent(new StorageEvent('storage'));
     }
     return success;
   };

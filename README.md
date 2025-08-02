@@ -1,8 +1,32 @@
-# Welcome to your Lovable project
+# Su Jok Therapy Manager 🌿
 
-## Project info
+Profesionalna web aplikacija za upravljanje Su Jok terapeutskom praksom.
 
-**URL**: https://lovable.dev/projects/df0bfa58-72e1-4394-a5bf-397bfc6f2320
+## ✨ Funkcionalnosti
+
+- 👥 **Upravljanje pacijentima** - dodavanje, uređivanje, deaktiviranje
+- 📅 **Zakazivanje terapija** - kalendar sesija sa različitim statusima
+- 🩺 **Istorija tretmana** - detaljno praćenje tretmana
+- 📊 **Statistike** - pregled performansi prakse
+- 📄 **PDF izvoz** - kompletni izveštaji o pacijentima
+- ✏️ **Uređivanje sesija** - mogućnost izmene završenih sesija
+- 💾 **Lokalno čuvanje** - svi podaci se čuvaju lokalno u pregledniku
+- 🔄 **Real-time ažuriranje** - automatsko ažuriranje UI-ja
+
+## 🌐 Deployment na VPS (admin.neutro.rs)
+
+Za deployment na Ubuntu 22 VPS:
+
+```bash
+# Build aplikaciju
+npm run build
+
+# Kopiraj dist folder na server
+scp -r dist/* user@admin.neutro.rs:/var/www/html/
+
+# Ili koristi nginx za servisiranje
+sudo systemctl start nginx
+```
 
 ## How can I edit this code?
 
@@ -50,15 +74,29 @@ npm run dev
 - Click on "New codespace" to launch a new Codespace environment.
 - Edit files directly within the Codespace and commit and push your changes once you're done.
 
-## What technologies are used for this project?
+## 🏗️ Tehnički stek
 
-This project is built with:
+- **Frontend**: React 18 + TypeScript
+- **Styling**: Tailwind CSS + shadcn-ui
+- **Icons**: Lucide React
+- **PDF**: jsPDF + html2canvas
+- **Build**: Vite
+- **Routing**: React Router DOM
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 📱 Ključne komponente
+
+- `PatientProfile` - detaljni profil pacijenta sa PDF export
+- `PDFExport` - izvoz podataka u PDF format
+- `EditSessionForm` - uređivanje sesija i tretmana
+- `TherapyCalendar` - kalendar terapija
+- `DashboardStats` - statistike prakse
+
+## 💡 Napomene
+
+- Podaci se čuvaju u localStorage preglednika
+- Aplikacija radi potpuno offline
+- Real-time ažuriranje preko storage events
+- Responzivni dizajn za sve uređaje
 
 ## How can I deploy this project?
 

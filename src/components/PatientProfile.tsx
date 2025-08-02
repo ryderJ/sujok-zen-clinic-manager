@@ -2,7 +2,10 @@
 import { ArrowLeft, Plus, Download, Edit, Trash2, Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePatients, useSessions, useTreatments } from "@/hooks/useDatabase";
-import { Patient } from "@/lib/database";
+import { Patient, TherapySession } from "@/lib/database";
+import { PDFExport } from "./PDFExport";
+import { EditSessionForm } from "./EditSessionForm";
+import { useState } from "react";
 
 interface PatientProfileProps {
   patient: Patient;
@@ -19,8 +22,9 @@ export const PatientProfile = ({
   onEditPatient, 
   onDeleteConfirm 
 }: PatientProfileProps) => {
-  const { sessions } = useSessions();
+  const { sessions, updateSession } = useSessions();
   const { treatments, deleteTreatment } = useTreatments();
+  const [editingSession, setEditingSession] = useState<TherapySession | null>(null);
 
   // Filter sessions and treatments for this patient
   const patientSessions = sessions.filter(session => session.patient_id === patient.id);
@@ -31,6 +35,13 @@ export const PatientProfile = ({
       deleteTreatment(treatmentId);
     };
     onDeleteConfirm(deleteAction);
+  };
+
+  const handleEditSession = (sessionData: Partial<TherapySession>) => {
+    if (editingSession) {
+      updateSession(editingSession.id, sessionData);
+      setEditingSession(null);
+    }
   };
 
   const getSessionStatusColor = (status: string) => {
@@ -87,6 +98,11 @@ export const PatientProfile = ({
             </div>
           </div>
           <div className="flex space-x-3">
+            <PDFExport 
+              patient={patient}
+              sessions={patientSessions}
+              treatments={patientTreatments}
+            />
             <Button 
               onClick={onEditPatient}
               variant="outline" 
@@ -196,9 +212,19 @@ export const PatientProfile = ({
                         <span className="text-sm text-slate-500">{session.notes}</span>
                       )}
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getSessionStatusColor(session.status)}`}>
-                      {session.status}
-                    </span>
+                    <div className="flex items-center space-x-2">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium border ${getSessionStatusColor(session.status)}`}>
+                        {session.status}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingSession(session)}
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
             </div>
@@ -266,6 +292,14 @@ export const PatientProfile = ({
           <p className="text-slate-500 text-center py-8">Nema zabeleženih tretmana za ovog pacijenta</p>
         )}
       </div>
+
+      {editingSession && (
+        <EditSessionForm
+          session={editingSession}
+          onSave={handleEditSession}
+          onCancel={() => setEditingSession(null)}
+        />
+      )}
     </div>
   );
 };
