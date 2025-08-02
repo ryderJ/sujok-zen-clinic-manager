@@ -23,8 +23,8 @@ export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
             <Activity className="w-6 h-6 text-white" />
           </div>
           <div>
-            <h2 className="font-bold text-slate-800">Su Jok</h2>
-            <p className="text-sm text-slate-500">Doktor</p>
+            <h2 className="font-bold text-slate-800">Neutro</h2>
+            <p className="text-sm text-slate-500">Dr Goran Topalović</p>
           </div>
         </div>
         

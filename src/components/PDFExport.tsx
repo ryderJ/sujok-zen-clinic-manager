@@ -16,45 +16,86 @@ export const PDFExport = ({ patient, sessions, treatments }: PDFExportProps) => 
     // Serbian text support
     doc.setLanguage('sr');
     
-    // Header
-    doc.setFontSize(20);
-    doc.text('Su Jok Therapy Manager', 20, 30);
-    doc.setFontSize(16);
-    doc.text('Izveštaj o pacijentu', 20, 40);
+    // Professional header with styling
+    doc.setFillColor(59, 130, 246); // Blue background
+    doc.rect(0, 0, 210, 50, 'F');
     
-    // Patient info
+    // Logo/Icon area
+    doc.setFillColor(255, 255, 255);
+    doc.circle(25, 25, 8, 'F');
+    
+    // Main header
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(24);
+    doc.setFont(undefined, 'bold');
+    doc.text('NEUTRO', 40, 20);
+    
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'normal');
+    doc.text('Dr Goran Topalović', 40, 28);
+    doc.text('neutro.rs', 40, 35);
+    
+    // Report title
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(18);
+    doc.setFont(undefined, 'bold');
+    doc.text('IZVEŠTAJ O PACIJENTU', 20, 70);
+    
+    // Patient information section
+    doc.setFillColor(248, 250, 252); // Light gray background
+    doc.rect(15, 80, 180, 40, 'F');
+    
     doc.setFontSize(14);
-    doc.text(`Ime: ${patient.name}`, 20, 60);
-    doc.text(`Datum rođenja: ${new Date(patient.date_of_birth).toLocaleDateString('sr-RS')}`, 20, 70);
-    doc.text(`Telefon: ${patient.phone}`, 20, 80);
-    doc.text(`Email: ${patient.email || 'Nije unet'}`, 20, 90);
-    doc.text(`Status: ${patient.is_active ? 'Aktivan' : 'Neaktivan'}`, 20, 100);
+    doc.setFont(undefined, 'bold');
+    doc.text('PODACI O PACIJENTU', 20, 90);
+    
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(11);
+    doc.text(`Ime i prezime: ${patient.name}`, 20, 100);
+    doc.text(`Datum rođenja: ${new Date(patient.date_of_birth).toLocaleDateString('sr-RS')}`, 20, 107);
+    doc.text(`Telefon: ${patient.phone}`, 20, 114);
+    doc.text(`Email: ${patient.email || 'Nije unet'}`, 105, 114);
+    doc.text(`Status: ${patient.is_active ? 'Aktivan' : 'Neaktivan'}`, 105, 107);
+    
+    let yPosition = 130;
     
     if (patient.notes) {
-      doc.text('Napomene:', 20, 120);
+      yPosition += 10;
+      doc.setFont(undefined, 'bold');
+      doc.text('NAPOMENE:', 20, yPosition);
+      yPosition += 7;
+      doc.setFont(undefined, 'normal');
       const splitNotes = doc.splitTextToSize(patient.notes, 170);
-      doc.text(splitNotes, 20, 130);
+      doc.text(splitNotes, 20, yPosition);
+      yPosition += splitNotes.length * 5 + 10;
     }
     
-    // Sessions summary
+    // Sessions summary with styling
     const completedSessions = sessions.filter(s => s.status === 'odrađena').length;
     const cancelledSessions = sessions.filter(s => s.status === 'otkazana').length;
     
-    let yPosition = patient.notes ? 160 : 130;
+    yPosition += 10;
     
-    doc.setFontSize(16);
-    doc.text('Statistike sesija:', 20, yPosition);
+    // Statistics section with professional styling
+    doc.setFillColor(59, 130, 246);
+    doc.rect(15, yPosition, 180, 8, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(12);
+    doc.setFont(undefined, 'bold');
+    doc.text('STATISTIKE SESIJA', 20, yPosition + 5);
     yPosition += 15;
     
-    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont(undefined, 'normal');
+    doc.setFontSize(11);
+    
+    // Statistics in a grid layout
     doc.text(`Ukupno sesija: ${sessions.length}`, 20, yPosition);
-    yPosition += 10;
-    doc.text(`Završene sesije: ${completedSessions}`, 20, yPosition);
-    yPosition += 10;
-    doc.text(`Otkazane sesije: ${cancelledSessions}`, 20, yPosition);
-    yPosition += 10;
-    doc.text(`Stopa završenih: ${sessions.length > 0 ? Math.round((completedSessions / sessions.length) * 100) : 0}%`, 20, yPosition);
-    yPosition += 20;
+    doc.text(`Završene: ${completedSessions}`, 105, yPosition);
+    yPosition += 7;
+    doc.text(`Otkazane: ${cancelledSessions}`, 20, yPosition);
+    doc.text(`Uspešnost: ${sessions.length > 0 ? Math.round((completedSessions / sessions.length) * 100) : 0}%`, 105, yPosition);
+    yPosition += 15;
     
     // Sessions list
     if (sessions.length > 0) {
@@ -115,13 +156,19 @@ export const PDFExport = ({ patient, sessions, treatments }: PDFExportProps) => 
       });
     }
     
-    // Footer
+    // Professional footer
     const pageCount = doc.getNumberOfPages();
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
+      
+      // Footer line
+      doc.setDrawColor(59, 130, 246);
+      doc.line(15, 285, 195, 285);
+      
       doc.setFontSize(8);
+      doc.setTextColor(100, 100, 100);
       doc.text(`Strana ${i} od ${pageCount}`, 20, 290);
-      doc.text(`Generisano: ${new Date().toLocaleDateString('sr-RS')}`, 150, 290);
+      doc.text(`Generisano: ${new Date().toLocaleDateString('sr-RS')} - Neutro.rs`, 130, 290);
     }
     
     // Save PDF
