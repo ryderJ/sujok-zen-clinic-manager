@@ -4,8 +4,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { supabase } from "@/lib/supabase";
-import { LoginForm } from "@/components/LoginForm";
+import { LocalLoginForm } from "@/components/LocalLoginForm";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -14,18 +13,10 @@ const App = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check initial auth state
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-      setLoading(false);
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setIsAuthenticated(!!session);
-    });
-
-    return () => subscription.unsubscribe();
+    // Check if user is already logged in locally
+    const isLoggedIn = localStorage.getItem('neutro_admin_logged_in') === 'true';
+    setIsAuthenticated(isLoggedIn);
+    setLoading(false);
   }, []);
 
   if (loading) {
@@ -41,7 +32,7 @@ const App = () => {
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <LoginForm onLogin={() => setIsAuthenticated(true)} />
+        <LocalLoginForm onLogin={() => setIsAuthenticated(true)} />
       </TooltipProvider>
     );
   }

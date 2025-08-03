@@ -48,82 +48,44 @@ sudo systemctl reload nginx
 sudo certbot --nginx -d admin.neutro.rs
 ```
 
-## Environment variables
+## Login podatci
 
-Kreiraj `.env` fajl u root direktoru:
+U `src/components/LocalLoginForm.tsx` promeni login podatke:
 
-```env
-VITE_SUPABASE_URL=your_supabase_url
-VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```typescript
+const ADMIN_USERNAME = "your_username";
+const ADMIN_PASSWORD = "your_password";
 ```
 
-## Database Setup (Supabase)
-
-### 1. Kreiranje tabela u Supabase:
-
-```sql
--- Pacijenti tabela
-CREATE TABLE patients (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  name VARCHAR NOT NULL,
-  date_of_birth DATE NOT NULL,
-  phone VARCHAR NOT NULL,
-  email VARCHAR,
-  is_active BOOLEAN DEFAULT true,
-  notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Sesije tabela
-CREATE TABLE therapy_sessions (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
-  date TIMESTAMP WITH TIME ZONE NOT NULL,
-  status VARCHAR CHECK (status IN ('zakazana', 'odrađena', 'otkazana')) DEFAULT 'zakazana',
-  notes TEXT,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-
--- Tretmani tabela
-CREATE TABLE treatments (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  patient_id UUID REFERENCES patients(id) ON DELETE CASCADE,
-  date TIMESTAMP WITH TIME ZONE NOT NULL,
-  type VARCHAR NOT NULL,
-  description TEXT NOT NULL,
-  images TEXT[], -- Array za base64 slike
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
-```
-
-### 2. Row Level Security (RLS)
-```sql
--- Enable RLS
-ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
-ALTER TABLE therapy_sessions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE treatments ENABLE ROW LEVEL SECURITY;
-
--- Policies za autentifikovane korisnike
-CREATE POLICY "Allow authenticated users all operations" ON patients FOR ALL TO authenticated USING (true);
-CREATE POLICY "Allow authenticated users all operations" ON therapy_sessions FOR ALL TO authenticated USING (true);
-CREATE POLICY "Allow authenticated users all operations" ON treatments FOR ALL TO authenticated USING (true);
-```
-
-## Autentifikacija
-
-1. U Supabase dashboard, idi na Authentication > Users
-2. Kreiraj korisnika sa email/password
-3. Koristi te podatke za login u aplikaciju
+**VAŽNO**: Promeni default login podatke (`admin` / `neutro2024`) pre deployment-a!
 
 ## Čuvanje podataka
 
-Aplikacija koristi **Supabase PostgreSQL bazu** umesto localStorage:
+Aplikacija koristi **localStorage** u browser-u za čuvanje podataka:
 
-- **Pacijenti**: Tabela `patients`
-- **Sesije**: Tabela `therapy_sessions` 
-- **Tretmani**: Tabela `treatments` (sa slikama u base64 formatu)
+- **Pacijenti**: localStorage key `sujok_patients`
+- **Sesije**: localStorage key `sujok_sessions` 
+- **Tretmani**: localStorage key `sujok_treatments` (sa slikama u base64 formatu)
 
-Svi podatci su čuvani sigurno u cloud bazi sa backup sistemom.
+### Backup podataka
+Za backup podataka možeš eksportovati localStorage:
+```javascript
+// U browser console
+const backup = {
+  patients: localStorage.getItem('sujok_patients'),
+  sessions: localStorage.getItem('sujok_sessions'),
+  treatments: localStorage.getItem('sujok_treatments')
+};
+console.log(JSON.stringify(backup, null, 2));
+```
+
+### Restore podataka
+```javascript
+// U browser console
+localStorage.setItem('sujok_patients', 'exported_data');
+localStorage.setItem('sujok_sessions', 'exported_data');
+localStorage.setItem('sujok_treatments', 'exported_data');
+```
 
 ## DNS Setup
 

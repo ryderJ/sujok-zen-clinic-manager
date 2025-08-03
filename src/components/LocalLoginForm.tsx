@@ -1,53 +1,45 @@
 import { useState } from "react";
-import { supabase } from "@/lib/supabase";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
-interface LoginFormProps {
+interface LocalLoginFormProps {
   onLogin: () => void;
 }
 
-export const LoginForm = ({ onLogin }: LoginFormProps) => {
-  const [email, setEmail] = useState("");
+export const LocalLoginForm = ({ onLogin }: LocalLoginFormProps) => {
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+
+  // Hardcoded credentials - change these in production
+  const ADMIN_USERNAME = "admin";
+  const ADMIN_PASSWORD = "neutro2024";
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        toast({
-          title: "Greška pri prijavljivanju",
-          description: error.message,
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Uspešno prijavljivanje",
-          description: "Dobrodošli u Neutro admin panel!",
-        });
-        onLogin();
-      }
-    } catch (error) {
+    // Simple local authentication
+    if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+      localStorage.setItem('neutro_admin_logged_in', 'true');
       toast({
-        title: "Greška",
-        description: "Došlo je do neočekivane greške",
+        title: "Uspešno prijavljivanje",
+        description: "Dobrodošli u Neutro admin panel!",
+      });
+      onLogin();
+    } else {
+      toast({
+        title: "Greška pri prijavljivanju",
+        description: "Neispravno korisničko ime ili lozinka",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
+    
+    setLoading(false);
   };
 
   return (
@@ -70,10 +62,10 @@ export const LoginForm = ({ onLogin }: LoginFormProps) => {
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <Input
-                type="email"
-                placeholder="Email adresa"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                type="text"
+                placeholder="Korisničko ime"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
                 required
               />
             </div>
