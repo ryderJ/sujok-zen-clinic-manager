@@ -1,0 +1,327 @@
+const express = require('express');
+const cors = require('cors');
+const fs = require('fs-extra');
+const path = require('path');
+const multer = require('multer');
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+
+// Middleware
+app.use(cors());
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Data folder setup
+const DATA_DIR = path.join(__dirname, 'data');
+const UPLOADS_DIR = path.join(__dirname, 'uploads');
+
+// Ensure directories exist
+fs.ensureDirSync(DATA_DIR);
+fs.ensureDirSync(UPLOADS_DIR);
+
+// File paths
+const FILES = {
+  patients: path.join(DATA_DIR, 'patients.json'),
+  sessions: path.join(DATA_DIR, 'sessions.json'),
+  treatments: path.join(DATA_DIR, 'treatments.json'),
+  categories: path.join(DATA_DIR, 'categories.json')
+};
+
+// Initialize files if they don't exist
+Object.values(FILES).forEach(file => {
+  if (!fs.existsSync(file)) {
+    fs.writeJsonSync(file, []);
+  }
+});
+
+// Helper functions
+const readData = (type) => {
+  try {
+    return fs.readJsonSync(FILES[type]);
+  } catch (error) {
+    console.error(`Error reading ${type}:`, error);
+    return [];
+  }
+};
+
+const writeData = (type, data) => {
+  try {
+    fs.writeJsonSync(FILES[type], data, { spaces: 2 });
+    return true;
+  } catch (error) {
+    console.error(`Error writing ${type}:`, error);
+    return false;
+  }
+};
+
+// Setup multer for file uploads
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, UPLOADS_DIR);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, file.fieldname + '-' + uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ 
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed'));
+    }
+  },
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  }
+});
+
+// Serve uploaded files
+app.use('/uploads', express.static(UPLOADS_DIR));
+
+// PATIENTS ROUTES
+app.get('/api/patients', (req, res) => {
+  const patients = readData('patients');
+  res.json(patients);
+});
+
+app.post('/api/patients', (req, res) => {
+  const patients = readData('patients');
+  const newPatient = {
+    ...req.body,
+    id: Date.now().toString(),
+    created_at: new Date().toISOString()
+  };
+  
+  patients.push(newPatient);
+  
+  if (writeData('patients', patients)) {
+    res.json(newPatient);
+  } else {
+    res.status(500).json({ error: 'Failed to save patient' });
+  }
+});
+
+app.put('/api/patients/:id', (req, res) => {
+  const patients = readData('patients');
+  const index = patients.findIndex(p => p.id === req.params.id);
+  
+  if (index === -1) {
+    return res.status(404).json({ error: 'Patient not found' });
+  }
+  
+  patients[index] = { ...patients[index], ...req.body };
+  
+  if (writeData('patients', patients)) {
+    res.json(patients[index]);
+  } else {
+    res.status(500).json({ error: 'Failed to update patient' });
+  }
+});
+
+app.delete('/api/patients/:id', (req, res) => {
+  const patients = readData('patients');
+  const sessions = readData('sessions');
+  const treatments = readData('treatments');
+  
+  const filteredPatients = patients.filter(p => p.id !== req.params.id);
+  const filteredSessions = sessions.filter(s => s.patient_id !== req.params.id);
+  const filteredTreatments = treatments.filter(t => t.patient_id !== req.params.id);
+  
+  if (writeData('patients', filteredPatients) && 
+      writeData('sessions', filteredSessions) && 
+      writeData('treatments', filteredTreatments)) {
+    res.json({ success: true });
+  } else {
+    res.status(500).json({ error: 'Failed to delete patient' });
+  }
+});
+
+// SESSIONS ROUTES
+app.get('/api/sessions', (req, res) => {
+  const sessions = readData('sessions');
+  res.json(sessions);
+});
+
+app.post('/api/sessions', (req, res) => {
+  const sessions = readData('sessions');
+  const newSession = {
+    ...req.body,
+    id: Date.now().toString(),
+    created_at: new Date().toISOString()
+  };
+  
+  sessions.push(newSession);
+  
+  if (writeData('sessions', sessions)) {
+    res.json(newSession);
+  } else {
+    res.status(500).json({ error: 'Failed to save session' });
+  }
+});
+
+app.put('/api/sessions/:id', (req, res) => {
+  const sessions = readData('sessions');
+  const index = sessions.findIndex(s => s.id === req.params.id);
+  
+  if (index === -1) {
+    return res.status(404).json({ error: 'Session not found' });
+  }
+  
+  sessions[index] = { ...sessions[index], ...req.body };
+  
+  if (writeData('sessions', sessions)) {
+    res.json(sessions[index]);
+  } else {
+    res.status(500).json({ error: 'Failed to update session' });
+  }
+});
+
+app.delete('/api/sessions/:id', (req, res) => {
+  const sessions = readData('sessions');
+  const filteredSessions = sessions.filter(s => s.id !== req.params.id);
+  
+  if (writeData('sessions', filteredSessions)) {
+    res.json({ success: true });
+  } else {
+    res.status(500).json({ error: 'Failed to delete session' });
+  }
+});
+
+// TREATMENTS ROUTES
+app.get('/api/treatments', (req, res) => {
+  const treatments = readData('treatments');
+  res.json(treatments);
+});
+
+app.post('/api/treatments', upload.array('images', 10), (req, res) => {
+  const treatments = readData('treatments');
+  
+  // Process uploaded images
+  const images = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
+  
+  const newTreatment = {
+    ...req.body,
+    id: Date.now().toString(),
+    created_at: new Date().toISOString(),
+    images: images
+  };
+  
+  treatments.push(newTreatment);
+  
+  if (writeData('treatments', treatments)) {
+    res.json(newTreatment);
+  } else {
+    res.status(500).json({ error: 'Failed to save treatment' });
+  }
+});
+
+app.delete('/api/treatments/:id', (req, res) => {
+  const treatments = readData('treatments');
+  const filteredTreatments = treatments.filter(t => t.id !== req.params.id);
+  
+  if (writeData('treatments', filteredTreatments)) {
+    res.json({ success: true });
+  } else {
+    res.status(500).json({ error: 'Failed to delete treatment' });
+  }
+});
+
+// CATEGORIES ROUTES
+app.get('/api/categories', (req, res) => {
+  const categories = readData('categories');
+  res.json(categories);
+});
+
+app.post('/api/categories', (req, res) => {
+  const categories = readData('categories');
+  const newCategory = {
+    ...req.body,
+    id: Date.now().toString(),
+    created_at: new Date().toISOString()
+  };
+  
+  categories.push(newCategory);
+  
+  if (writeData('categories', categories)) {
+    res.json(newCategory);
+  } else {
+    res.status(500).json({ error: 'Failed to save category' });
+  }
+});
+
+app.put('/api/categories/:id', (req, res) => {
+  const categories = readData('categories');
+  const index = categories.findIndex(c => c.id === req.params.id);
+  
+  if (index === -1) {
+    return res.status(404).json({ error: 'Category not found' });
+  }
+  
+  categories[index] = { ...categories[index], ...req.body };
+  
+  if (writeData('categories', categories)) {
+    res.json(categories[index]);
+  } else {
+    res.status(500).json({ error: 'Failed to update category' });
+  }
+});
+
+app.delete('/api/categories/:id', (req, res) => {
+  const categories = readData('categories');
+  const filteredCategories = categories.filter(c => c.id !== req.params.id);
+  
+  if (writeData('categories', filteredCategories)) {
+    res.json({ success: true });
+  } else {
+    res.status(500).json({ error: 'Failed to delete category' });
+  }
+});
+
+// BACKUP ROUTES
+app.get('/api/backup', (req, res) => {
+  try {
+    const backup = {
+      patients: readData('patients'),
+      sessions: readData('sessions'),
+      treatments: readData('treatments'),
+      categories: readData('categories'),
+      exportDate: new Date().toISOString(),
+      version: "1.0"
+    };
+    
+    res.json(backup);
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to create backup' });
+  }
+});
+
+app.post('/api/restore', (req, res) => {
+  try {
+    const { patients, sessions, treatments, categories } = req.body;
+    
+    if (writeData('patients', patients || []) &&
+        writeData('sessions', sessions || []) &&
+        writeData('treatments', treatments || []) &&
+        writeData('categories', categories || [])) {
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ error: 'Failed to restore data' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to restore data' });
+  }
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+
+app.listen(PORT, () => {
+  console.log(`Neutro Admin Backend server running on port ${PORT}`);
+});

@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { db, Patient, TherapySession, Treatment } from '@/lib/database';
 
 export const usePatients = () => {
@@ -7,47 +6,53 @@ export const usePatients = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadPatients = () => {
-      setPatients(db.getPatients());
-      setLoading(false);
+    const loadPatients = async () => {
+      setLoading(true);
+      try {
+        const patientsData = await db.getPatients();
+        setPatients(patientsData);
+      } catch (error) {
+        console.error('Failed to load patients:', error);
+      } finally {
+        setLoading(false);
+      }
     };
+
     loadPatients();
-    
-    // Listen for storage changes for real-time updates
-    const handleStorageChange = () => {
-      setPatients(db.getPatients());
+
+    const handleStorageChange = async () => {
+      try {
+        const patientsData = await db.getPatients();
+        setPatients(patientsData);
+      } catch (error) {
+        console.error('Failed to reload patients:', error);
+      }
     };
-    
+
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const addPatient = (patientData: Omit<Patient, 'id' | 'created_at'>) => {
-    const newPatient = db.addPatient(patientData);
-    const updatedPatients = db.getPatients();
+  const addPatient = useCallback(async (patientData: Omit<Patient, 'id' | 'created_at'>) => {
+    const newPatient = await db.addPatient(patientData);
+    const updatedPatients = await db.getPatients();
     setPatients(updatedPatients);
-    // Trigger storage event for other components
-    window.dispatchEvent(new StorageEvent('storage'));
     return newPatient;
-  };
+  }, []);
 
-  const updatePatient = (id: string, updates: Partial<Patient>) => {
-    const updated = db.updatePatient(id, updates);
-    if (updated) {
-      setPatients(db.getPatients());
-      window.dispatchEvent(new StorageEvent('storage'));
-    }
-    return updated;
-  };
+  const updatePatient = useCallback(async (id: string, updates: Partial<Patient>) => {
+    const updatedPatient = await db.updatePatient(id, updates);
+    const updatedPatients = await db.getPatients();
+    setPatients(updatedPatients);
+    return updatedPatient;
+  }, []);
 
-  const deletePatient = (id: string) => {
-    const success = db.deletePatient(id);
-    if (success) {
-      setPatients(db.getPatients());
-      window.dispatchEvent(new StorageEvent('storage'));
-    }
-    return success;
-  };
+  const deletePatient = useCallback(async (id: string) => {
+    const result = await db.deletePatient(id);
+    const updatedPatients = await db.getPatients();
+    setPatients(updatedPatients);
+    return result;
+  }, []);
 
   return {
     patients,
@@ -55,7 +60,6 @@ export const usePatients = () => {
     addPatient,
     updatePatient,
     deletePatient,
-    refresh: () => setPatients(db.getPatients())
   };
 };
 
@@ -64,41 +68,53 @@ export const useSessions = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setSessions(db.getSessions());
-    setLoading(false);
-    
-    const handleStorageChange = () => {
-      setSessions(db.getSessions());
+    const loadSessions = async () => {
+      setLoading(true);
+      try {
+        const sessionsData = await db.getSessions();
+        setSessions(sessionsData);
+      } catch (error) {
+        console.error('Failed to load sessions:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    
+
+    loadSessions();
+
+    const handleStorageChange = async () => {
+      try {
+        const sessionsData = await db.getSessions();
+        setSessions(sessionsData);
+      } catch (error) {
+        console.error('Failed to reload sessions:', error);
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const addSession = (sessionData: Omit<TherapySession, 'id' | 'created_at'>) => {
-    const newSession = db.addSession(sessionData);
-    setSessions(db.getSessions());
-    window.dispatchEvent(new StorageEvent('storage'));
+  const addSession = useCallback(async (sessionData: Omit<TherapySession, 'id' | 'created_at'>) => {
+    const newSession = await db.addSession(sessionData);
+    const updatedSessions = await db.getSessions();
+    setSessions(updatedSessions);
     return newSession;
-  };
+  }, []);
 
-  const updateSession = (id: string, updates: Partial<TherapySession>) => {
-    const updated = db.updateSession(id, updates);
-    if (updated) {
-      setSessions(db.getSessions());
-      window.dispatchEvent(new StorageEvent('storage'));
-    }
-    return updated;
-  };
+  const updateSession = useCallback(async (id: string, updates: Partial<TherapySession>) => {
+    const updatedSession = await db.updateSession(id, updates);
+    const updatedSessions = await db.getSessions();
+    setSessions(updatedSessions);
+    return updatedSession;
+  }, []);
 
-  const deleteSession = (id: string) => {
-    const success = db.deleteSession(id);
-    if (success) {
-      setSessions(db.getSessions());
-      window.dispatchEvent(new StorageEvent('storage'));
-    }
-    return success;
-  };
+  const deleteSession = useCallback(async (id: string) => {
+    const result = await db.deleteSession(id);
+    const updatedSessions = await db.getSessions();
+    setSessions(updatedSessions);
+    return result;
+  }, []);
 
   return {
     sessions,
@@ -106,7 +122,6 @@ export const useSessions = () => {
     addSession,
     updateSession,
     deleteSession,
-    refresh: () => setSessions(db.getSessions())
   };
 };
 
@@ -115,38 +130,51 @@ export const useTreatments = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTreatments(db.getTreatments());
-    setLoading(false);
-    
-    const handleStorageChange = () => {
-      setTreatments(db.getTreatments());
+    const loadTreatments = async () => {
+      setLoading(true);
+      try {
+        const treatmentsData = await db.getTreatments();
+        setTreatments(treatmentsData);
+      } catch (error) {
+        console.error('Failed to load treatments:', error);
+      } finally {
+        setLoading(false);
+      }
     };
-    
+
+    loadTreatments();
+
+    const handleStorageChange = async () => {
+      try {
+        const treatmentsData = await db.getTreatments();
+        setTreatments(treatmentsData);
+      } catch (error) {
+        console.error('Failed to reload treatments:', error);
+      }
+    };
+
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const addTreatment = (treatmentData: Omit<Treatment, 'id' | 'created_at'>) => {
-    const newTreatment = db.addTreatment(treatmentData);
-    setTreatments(db.getTreatments());
-    window.dispatchEvent(new StorageEvent('storage'));
+  const addTreatment = useCallback(async (treatmentData: Omit<Treatment, 'id' | 'created_at'>, images?: File[]) => {
+    const newTreatment = await db.addTreatment(treatmentData, images);
+    const updatedTreatments = await db.getTreatments();
+    setTreatments(updatedTreatments);
     return newTreatment;
-  };
+  }, []);
 
-  const deleteTreatment = (id: string) => {
-    const success = db.deleteTreatment(id);
-    if (success) {
-      setTreatments(db.getTreatments());
-      window.dispatchEvent(new StorageEvent('storage'));
-    }
-    return success;
-  };
+  const deleteTreatment = useCallback(async (id: string) => {
+    const result = await db.deleteTreatment(id);
+    const updatedTreatments = await db.getTreatments();
+    setTreatments(updatedTreatments);
+    return result;
+  }, []);
 
   return {
     treatments,
     loading,
     addTreatment,
     deleteTreatment,
-    refresh: () => setTreatments(db.getTreatments())
   };
 };

@@ -2,50 +2,114 @@
 
 ## Priprema za deployment
 
-### 1. Build aplikacije
+### 1. Backend setup
+
+Prvo postavi Node.js backend na VPS-u:
+
+```bash
+# Install Node.js i npm
+curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+sudo apt-get install -y nodejs
+
+# Kreiraj direktorij za backend
+sudo mkdir -p /var/www/neutro-admin-backend
+cd /var/www/neutro-admin-backend
+
+# Upload server fajlove (server/ folder iz projekta)
+# Instaliraj dependencies
+npm install
+
+# Instaliraj PM2 za upravljanje procesom
+sudo npm install -g pm2
+
+# Pokreni backend
+pm2 start server.js --name "neutro-admin-backend"
+pm2 startup
+pm2 save
+```
+
+### 2. Build aplikacije
+
+**IMPORTANT**: Promeni API_BASE_URL u `src/lib/database.ts` sa:
+```typescript
+const API_BASE_URL = 'http://localhost:3001/api';
+```
+na:
+```typescript
+const API_BASE_URL = 'https://admin.neutro.rs/api';
+```
+
+Zatim build aplikaciju:
 ```bash
 npm run build
 # ili
 yarn build
 ```
 
-### 2. Upload fajlova na VPS
+### 3. Upload fajlova na VPS
 Upload `dist` folder na VPS u folder `/var/www/admin.neutro.rs/`
 
-### 3. Nginx konfiguracija
-Kreiraj `/etc/nginx/sites-available/admin.neutro.rs`:
+### 4. Apache konfiguracija
 
-```nginx
-server {
-    listen 80;
-    server_name admin.neutro.rs;
+Kreiraj `/etc/apache2/sites-available/admin.neutro.rs.conf`:
+
+```apache
+<VirtualHost *:80>
+    ServerName admin.neutro.rs
+    DocumentRoot /var/www/admin.neutro.rs
     
-    root /var/www/admin.neutro.rs;
-    index index.html;
+    # React Router support
+    <Directory "/var/www/admin.neutro.rs">
+        Options Indexes FollowSymLinks
+        AllowOverride All
+        Require all granted
+        
+        # Handle React Router
+        RewriteEngine On
+        RewriteBase /
+        RewriteRule ^index\.html$ - [L]
+        RewriteCond %{REQUEST_FILENAME} !-f
+        RewriteCond %{REQUEST_FILENAME} !-d
+        RewriteRule . /index.html [L]
+    </Directory>
     
-    # Handle React Router
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
+    # Proxy API calls to backend
+    ProxyPreserveHost On
+    ProxyPass /api/ http://localhost:3001/api/
+    ProxyPassReverse /api/ http://localhost:3001/api/
+    ProxyPass /uploads/ http://localhost:3001/uploads/
+    ProxyPassReverse /uploads/ http://localhost:3001/uploads/
     
     # Cache static assets
-    location ~* \.(js|css|png|jpg|jpeg|gif|ico|svg)$ {
-        expires 1y;
-        add_header Cache-Control "public, immutable";
-    }
-}
+    <LocationMatch "\.(js|css|png|jpg|jpeg|gif|ico|svg)$">
+        ExpiresActive On
+        ExpiresDefault "access plus 1 year"
+        Header append Cache-Control "public"
+    </LocationMatch>
+    
+    ErrorLog ${APACHE_LOG_DIR}/admin.neutro.rs_error.log
+    CustomLog ${APACHE_LOG_DIR}/admin.neutro.rs_access.log combined
+</VirtualHost>
 ```
 
-### 4. Enable site
+### 5. Enable site i moduli
 ```bash
-sudo ln -s /etc/nginx/sites-available/admin.neutro.rs /etc/nginx/sites-enabled/
-sudo nginx -t
-sudo systemctl reload nginx
+# Enable potrebne Apache module
+sudo a2enmod rewrite
+sudo a2enmod proxy
+sudo a2enmod proxy_http
+sudo a2enmod expires
+sudo a2enmod headers
+
+# Enable site
+sudo a2ensite admin.neutro.rs.conf
+sudo systemctl reload apache2
 ```
 
-### 5. SSL certificate sa Let's Encrypt
+### 6. SSL certificate sa Let's Encrypt
 ```bash
-sudo certbot --nginx -d admin.neutro.rs
+sudo apt install certbot python3-certbot-apache
+sudo certbot --apache -d admin.neutro.rs
 ```
 
 ## Login podatci
@@ -61,30 +125,38 @@ const ADMIN_PASSWORD = "your_password";
 
 ## Čuvanje podataka
 
-Aplikacija koristi **localStorage** u browser-u za čuvanje podataka:
+Aplikacija koristi **Node.js backend** koji čuva podatke u JSON fajlovima na VPS-u:
 
-- **Pacijenti**: localStorage key `sujok_patients`
-- **Sesije**: localStorage key `sujok_sessions` 
-- **Tretmani**: localStorage key `sujok_treatments` (sa slikama u base64 formatu)
+### Struktura podataka na serveru:
+```
+/var/www/neutro-admin-backend/
+├── data/
+│   ├── patients.json      # Podaci o pacijentima
+│   ├── sessions.json      # Terapijske sesije
+│   ├── treatments.json    # Tretmani
+│   └── categories.json    # Kategorije tretmana
+├── uploads/               # Upload-ovane slike
+└── server.js             # Backend server
+```
 
-### Backup podataka
-Za backup podataka možeš eksportovati localStorage:
-```javascript
-// U browser console
-const backup = {
-  patients: localStorage.getItem('sujok_patients'),
-  sessions: localStorage.getItem('sujok_sessions'),
-  treatments: localStorage.getItem('sujok_treatments')
-};
-console.log(JSON.stringify(backup, null, 2));
+### Backup i restore
+Aplikacija ima ugrađenu **Backup Manager** stranicu gdje možeš:
+- **Eksportovati** sve podatke u JSON fajl 
+- **Importovati** prethodno eksportovane podatke
+- **Obrisati** sve podatke iz sistema
+
+### Manuelni backup
+Za backup direktno sa servera:
+```bash
+cd /var/www/neutro-admin-backend
+tar -czf backup-$(date +%Y%m%d).tar.gz data/ uploads/
 ```
 
 ### Restore podataka
-```javascript
-// U browser console
-localStorage.setItem('sujok_patients', 'exported_data');
-localStorage.setItem('sujok_sessions', 'exported_data');
-localStorage.setItem('sujok_treatments', 'exported_data');
+```bash
+cd /var/www/neutro-admin-backend
+tar -xzf backup-20231225.tar.gz
+pm2 restart neutro-admin-backend
 ```
 
 ## DNS Setup
@@ -97,5 +169,21 @@ A admin YOUR_VPS_IP_ADDRESS
 ## Monitoring
 
 Za monitoring aplikacije možeš koristiti:
-- `sudo tail -f /var/log/nginx/access.log`
-- `sudo tail -f /var/log/nginx/error.log`
+
+### Frontend (Apache)
+- `sudo tail -f /var/log/apache2/admin.neutro.rs_access.log`
+- `sudo tail -f /var/log/apache2/admin.neutro.rs_error.log`
+
+### Backend (PM2)
+- `pm2 logs neutro-admin-backend`
+- `pm2 monit`
+- `pm2 status`
+
+### Restartovanje servisa
+```bash
+# Restart backend
+pm2 restart neutro-admin-backend
+
+# Restart Apache
+sudo systemctl restart apache2
+```

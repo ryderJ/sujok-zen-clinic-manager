@@ -6,21 +6,15 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { db } from "@/lib/database";
 
 export const BackupManager = () => {
   const [importing, setImporting] = useState(false);
   const { toast } = useToast();
 
-  const exportData = () => {
+  const exportData = async () => {
     try {
-      const data = {
-        patients: JSON.parse(localStorage.getItem('sujok_patients') || '[]'),
-        sessions: JSON.parse(localStorage.getItem('sujok_sessions') || '[]'),
-        treatments: JSON.parse(localStorage.getItem('sujok_treatments') || '[]'),
-        categories: JSON.parse(localStorage.getItem('neutro_treatment_categories') || '[]'),
-        exportDate: new Date().toISOString(),
-        version: "1.0"
-      };
+      const data = await db.createBackup();
 
       const dataStr = JSON.stringify(data, null, 2);
       const dataBlob = new Blob([dataStr], { type: 'application/json' });
@@ -52,7 +46,7 @@ export const BackupManager = () => {
     setImporting(true);
     const reader = new FileReader();
     
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
         const data = JSON.parse(e.target?.result as string);
         
@@ -62,13 +56,7 @@ export const BackupManager = () => {
         }
 
         // Import data
-        localStorage.setItem('sujok_patients', JSON.stringify(data.patients));
-        localStorage.setItem('sujok_sessions', JSON.stringify(data.sessions));
-        localStorage.setItem('sujok_treatments', JSON.stringify(data.treatments));
-        
-        if (data.categories) {
-          localStorage.setItem('neutro_treatment_categories', JSON.stringify(data.categories));
-        }
+        await db.restoreBackup(data);
 
         // Trigger storage events to update UI
         window.dispatchEvent(new StorageEvent('storage'));
@@ -94,19 +82,29 @@ export const BackupManager = () => {
     reader.readAsText(file);
   };
 
-  const clearAllData = () => {
+  const clearAllData = async () => {
     if (window.confirm('Da li ste sigurni da želite da obrišete sve podatke? Ova akcija se ne može poništiti.')) {
-      localStorage.removeItem('sujok_patients');
-      localStorage.removeItem('sujok_sessions');
-      localStorage.removeItem('sujok_treatments');
-      localStorage.removeItem('neutro_treatment_categories');
-      
-      window.dispatchEvent(new StorageEvent('storage'));
-      
-      toast({
-        title: "Podaci obrisani",
-        description: "Svi podaci su uspešno obrisani",
-      });
+      try {
+        await db.restoreBackup({
+          patients: [],
+          sessions: [],
+          treatments: [],
+          categories: []
+        });
+        
+        window.dispatchEvent(new StorageEvent('storage'));
+        
+        toast({
+          title: "Podaci obrisani",
+          description: "Svi podaci su uspešno obrisani",
+        });
+      } catch (error) {
+        toast({
+          title: "Greška",
+          description: "Neuspešno brisanje podataka",
+          variant: "destructive",
+        });
+      }
     }
   };
 

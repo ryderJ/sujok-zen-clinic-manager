@@ -24,21 +24,25 @@ export const EditPatientForm = ({ patient, onClose, onSave }: EditPatientFormPro
 
   const { updatePatient } = usePatients();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const updatedPatient = updatePatient(patient.id, {
-      name: formData.name,
-      date_of_birth: formData.date_of_birth,
-      phone: formData.phone,
-      email: formData.email || undefined,
-      notes: formData.notes || undefined,
-    });
-    
-    if (updatedPatient) {
-      onSave(updatedPatient);
+    try {
+      const updatedPatient = await updatePatient(patient.id, {
+        name: formData.name,
+        date_of_birth: formData.date_of_birth,
+        phone: formData.phone,
+        email: formData.email || undefined,
+        notes: formData.notes || undefined,
+      });
+      
+      if (updatedPatient) {
+        onSave(updatedPatient);
+      }
+      onClose();
+    } catch (error) {
+      console.error('Failed to update patient:', error);
     }
-    onClose();
   };
 
   const handleChange = (field: string, value: string) => {

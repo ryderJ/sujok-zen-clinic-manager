@@ -1,3 +1,4 @@
+const API_BASE_URL = 'http://localhost:3001/api';
 
 export interface Patient {
   id: string;
@@ -31,130 +32,156 @@ export interface Treatment {
   created_at: string;
 }
 
-class LocalDatabase {
-  private patients: Patient[] = [];
-  private sessions: TherapySession[] = [];
-  private treatments: Treatment[] = [];
+export interface TreatmentCategory {
+  id: string;
+  name: string;
+  description?: string;
+  created_at: string;
+}
 
-  constructor() {
-    this.loadData();
-  }
-
-  private loadData() {
+class ApiDatabase {
+  private async apiCall(endpoint: string, options: RequestInit = {}) {
     try {
-      const patientsData = localStorage.getItem('sujok_patients');
-      const sessionsData = localStorage.getItem('sujok_sessions');
-      const treatmentsData = localStorage.getItem('sujok_treatments');
-
-      this.patients = patientsData ? JSON.parse(patientsData) : [];
-      this.sessions = sessionsData ? JSON.parse(sessionsData) : [];
-      this.treatments = treatmentsData ? JSON.parse(treatmentsData) : [];
+      const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        ...options,
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.statusText}`);
+      }
+      
+      return await response.json();
     } catch (error) {
-      console.error('Greška pri učitavanju podataka:', error);
-      this.patients = [];
-      this.sessions = [];
-      this.treatments = [];
-    }
-  }
-
-  private saveData() {
-    try {
-      localStorage.setItem('sujok_patients', JSON.stringify(this.patients));
-      localStorage.setItem('sujok_sessions', JSON.stringify(this.sessions));
-      localStorage.setItem('sujok_treatments', JSON.stringify(this.treatments));
-    } catch (error) {
-      console.error('Greška pri čuvanju podataka:', error);
+      console.error('API call failed:', error);
+      throw error;
     }
   }
 
   // Patient operations
-  getPatients(): Patient[] {
-    return [...this.patients];
+  async getPatients(): Promise<Patient[]> {
+    return await this.apiCall('/patients');
   }
 
-  addPatient(patient: Omit<Patient, 'id' | 'created_at'>): Patient {
-    const newPatient: Patient = {
-      ...patient,
-      id: Date.now().toString(),
-      created_at: new Date().toISOString()
-    };
-    this.patients.push(newPatient);
-    this.saveData();
-    return newPatient;
+  async addPatient(patient: Omit<Patient, 'id' | 'created_at'>): Promise<Patient> {
+    return await this.apiCall('/patients', {
+      method: 'POST',
+      body: JSON.stringify(patient),
+    });
   }
 
-  updatePatient(id: string, updates: Partial<Patient>): Patient | null {
-    const index = this.patients.findIndex(p => p.id === id);
-    if (index === -1) return null;
-    
-    this.patients[index] = { ...this.patients[index], ...updates };
-    this.saveData();
-    return this.patients[index];
+  async updatePatient(id: string, updates: Partial<Patient>): Promise<Patient> {
+    return await this.apiCall(`/patients/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
   }
 
-  deletePatient(id: string): boolean {
-    const initialLength = this.patients.length;
-    this.patients = this.patients.filter(p => p.id !== id);
-    this.sessions = this.sessions.filter(s => s.patient_id !== id);
-    this.treatments = this.treatments.filter(t => t.patient_id !== id);
-    this.saveData();
-    return this.patients.length < initialLength;
+  async deletePatient(id: string): Promise<boolean> {
+    await this.apiCall(`/patients/${id}`, { method: 'DELETE' });
+    return true;
   }
 
   // Session operations
-  getSessions(): TherapySession[] {
-    return [...this.sessions];
+  async getSessions(): Promise<TherapySession[]> {
+    return await this.apiCall('/sessions');
   }
 
-  addSession(session: Omit<TherapySession, 'id' | 'created_at'>): TherapySession {
-    const newSession: TherapySession = {
-      ...session,
-      id: Date.now().toString(),
-      created_at: new Date().toISOString()
-    };
-    this.sessions.push(newSession);
-    this.saveData();
-    return newSession;
+  async addSession(session: Omit<TherapySession, 'id' | 'created_at'>): Promise<TherapySession> {
+    return await this.apiCall('/sessions', {
+      method: 'POST',
+      body: JSON.stringify(session),
+    });
   }
 
-  updateSession(id: string, updates: Partial<TherapySession>): TherapySession | null {
-    const index = this.sessions.findIndex(s => s.id === id);
-    if (index === -1) return null;
-    
-    this.sessions[index] = { ...this.sessions[index], ...updates };
-    this.saveData();
-    return this.sessions[index];
+  async updateSession(id: string, updates: Partial<TherapySession>): Promise<TherapySession> {
+    return await this.apiCall(`/sessions/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
   }
 
-  deleteSession(id: string): boolean {
-    const initialLength = this.sessions.length;
-    this.sessions = this.sessions.filter(s => s.id !== id);
-    this.saveData();
-    return this.sessions.length < initialLength;
+  async deleteSession(id: string): Promise<boolean> {
+    await this.apiCall(`/sessions/${id}`, { method: 'DELETE' });
+    return true;
   }
 
   // Treatment operations
-  getTreatments(): Treatment[] {
-    return [...this.treatments];
+  async getTreatments(): Promise<Treatment[]> {
+    return await this.apiCall('/treatments');
   }
 
-  addTreatment(treatment: Omit<Treatment, 'id' | 'created_at'>): Treatment {
-    const newTreatment: Treatment = {
-      ...treatment,
-      id: Date.now().toString(),
-      created_at: new Date().toISOString()
-    };
-    this.treatments.push(newTreatment);
-    this.saveData();
-    return newTreatment;
+  async addTreatment(treatment: Omit<Treatment, 'id' | 'created_at'>, images?: File[]): Promise<Treatment> {
+    if (images && images.length > 0) {
+      const formData = new FormData();
+      
+      // Add treatment data
+      Object.keys(treatment).forEach(key => {
+        formData.append(key, (treatment as any)[key]);
+      });
+      
+      // Add images
+      images.forEach(image => {
+        formData.append('images', image);
+      });
+      
+      return await this.apiCall('/treatments', {
+        method: 'POST',
+        headers: {}, // Remove Content-Type to let browser set it for FormData
+        body: formData,
+      });
+    } else {
+      return await this.apiCall('/treatments', {
+        method: 'POST',
+        body: JSON.stringify(treatment),
+      });
+    }
   }
 
-  deleteTreatment(id: string): boolean {
-    const initialLength = this.treatments.length;
-    this.treatments = this.treatments.filter(t => t.id !== id);
-    this.saveData();
-    return this.treatments.length < initialLength;
+  async deleteTreatment(id: string): Promise<boolean> {
+    await this.apiCall(`/treatments/${id}`, { method: 'DELETE' });
+    return true;
+  }
+
+  // Category operations
+  async getCategories(): Promise<TreatmentCategory[]> {
+    return await this.apiCall('/categories');
+  }
+
+  async addCategory(category: Omit<TreatmentCategory, 'id' | 'created_at'>): Promise<TreatmentCategory> {
+    return await this.apiCall('/categories', {
+      method: 'POST',
+      body: JSON.stringify(category),
+    });
+  }
+
+  async updateCategory(id: string, updates: Partial<TreatmentCategory>): Promise<TreatmentCategory> {
+    return await this.apiCall(`/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
+  }
+
+  async deleteCategory(id: string): Promise<boolean> {
+    await this.apiCall(`/categories/${id}`, { method: 'DELETE' });
+    return true;
+  }
+
+  // Backup operations
+  async createBackup(): Promise<any> {
+    return await this.apiCall('/backup');
+  }
+
+  async restoreBackup(backup: any): Promise<boolean> {
+    await this.apiCall('/restore', {
+      method: 'POST',
+      body: JSON.stringify(backup),
+    });
+    return true;
   }
 }
 
-export const db = new LocalDatabase();
+export const db = new ApiDatabase();
