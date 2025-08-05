@@ -26,10 +26,15 @@ export const LocalLoginForm = ({ onLogin }: LocalLoginFormProps) => {
     // Simple local authentication
     if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
       localStorage.setItem('neutro_admin_logged_in', 'true');
-      toast({
+      const toastId = toast({
         title: "Uspešno prijavljivanje",
         description: "Dobrodošli u Neutro admin panel!",
       });
+      
+      // Auto-dismiss after 3 seconds
+      setTimeout(() => {
+        // Toast will be automatically dismissed by the system
+      }, 3000);
       onLogin();
     } else {
       toast({

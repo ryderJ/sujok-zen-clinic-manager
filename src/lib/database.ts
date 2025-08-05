@@ -22,9 +22,12 @@ export interface TherapySession {
 export interface Treatment {
   id: string;
   patient_id: string;
+  session_id?: string;
   date: string;
   type: string;
   description: string;
+  category_id?: string;
+  images?: string[];
   created_at: string;
 }
 

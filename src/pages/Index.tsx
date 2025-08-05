@@ -6,7 +6,9 @@ import { PatientsList } from "@/components/PatientsList";
 import { TherapyCalendar } from "@/components/TherapyCalendar";
 import { PatientProfile } from "@/components/PatientProfile";
 import { AddPatientForm } from "@/components/AddPatientForm";
-import { AddTreatmentForm } from "@/components/AddTreatmentForm";
+import { AdvancedAddTreatmentForm } from "@/components/AdvancedAddTreatmentForm";
+import { BackupManager } from "@/components/BackupManager";
+import { TreatmentCategoryManager } from "@/components/TreatmentCategoryManager";
 import { ScheduleTherapyForm } from "@/components/ScheduleTherapyForm";
 import { EditPatientForm } from "@/components/EditPatientForm";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -89,6 +91,10 @@ const Index = () => {
             fullView={true} 
           />
         );
+      case "categories":
+        return <TreatmentCategoryManager />;
+      case "backup":
+        return <BackupManager />;
       case "statistics":
         return <DashboardStats fullView={true} />;
       default:
@@ -122,7 +128,7 @@ const Index = () => {
       )}
       
       {showAddTreatment && selectedPatient && (
-        <AddTreatmentForm 
+        <AdvancedAddTreatmentForm 
           patient={selectedPatient}
           onClose={() => setShowAddTreatment(false)} 
         />

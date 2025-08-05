@@ -2,10 +2,12 @@
 import { ArrowLeft, Plus, Download, Edit, Trash2, Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePatients, useSessions, useTreatments } from "@/hooks/useDatabase";
-import { Patient, TherapySession } from "@/lib/database";
+import { Patient, TherapySession, Treatment } from "@/lib/database";
 import { PDFExport } from "./PDFExport";
 import { EditSessionForm } from "./EditSessionForm";
-import { useState } from "react";
+import { TreatmentDetailView } from "./TreatmentDetailView";
+import { TreatmentCategory } from "./TreatmentCategoryManager";
+import { useState, useEffect } from "react";
 
 interface PatientProfileProps {
   patient: Patient;
@@ -25,10 +27,20 @@ export const PatientProfile = ({
   const { sessions, updateSession } = useSessions();
   const { treatments, deleteTreatment } = useTreatments();
   const [editingSession, setEditingSession] = useState<TherapySession | null>(null);
+  const [selectedTreatment, setSelectedTreatment] = useState<Treatment | null>(null);
+  const [categories, setCategories] = useState<TreatmentCategory[]>([]);
 
   // Filter sessions and treatments for this patient
   const patientSessions = sessions.filter(session => session.patient_id === patient.id);
   const patientTreatments = treatments.filter(treatment => treatment.patient_id === patient.id);
+
+  // Load categories
+  useEffect(() => {
+    const stored = localStorage.getItem('neutro_treatment_categories');
+    if (stored) {
+      setCategories(JSON.parse(stored));
+    }
+  }, []);
   
   const handleDeleteTreatment = (treatmentId: string) => {
     const deleteAction = () => {
@@ -261,7 +273,10 @@ export const PatientProfile = ({
                 
                 <div className="absolute -left-2 top-0 w-4 h-4 bg-blue-500 rounded-full"></div>
                 
-                <div className="bg-slate-50 rounded-xl p-4">
+                <div 
+                  className="bg-slate-50 rounded-xl p-4 cursor-pointer hover:bg-slate-100 transition-colors"
+                  onClick={() => setSelectedTreatment(treatment)}
+                >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center space-x-3">
                       <span className="font-semibold text-slate-800">
@@ -275,7 +290,10 @@ export const PatientProfile = ({
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => handleDeleteTreatment(treatment.id)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteTreatment(treatment.id);
+                        }}
                         className="text-red-600 hover:text-red-700 hover:bg-red-50"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -283,7 +301,8 @@ export const PatientProfile = ({
                     </div>
                   </div>
                   
-                  <p className="text-sm text-slate-600">{treatment.description}</p>
+                  <p className="text-sm text-slate-600 line-clamp-2">{treatment.description}</p>
+                  <p className="text-xs text-slate-400 mt-2">Kliknite za detalje</p>
                 </div>
               </div>
             ))}
@@ -298,6 +317,14 @@ export const PatientProfile = ({
           session={editingSession}
           onSave={handleEditSession}
           onCancel={() => setEditingSession(null)}
+        />
+      )}
+
+      {selectedTreatment && (
+        <TreatmentDetailView
+          treatment={selectedTreatment}
+          categories={categories}
+          onClose={() => setSelectedTreatment(null)}
         />
       )}
     </div>

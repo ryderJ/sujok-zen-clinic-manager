@@ -15,6 +15,7 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
   const [formData, setFormData] = useState({
     patient_id: "",
     date: "",
+    time: "",
     notes: ""
   });
 
@@ -26,7 +27,7 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
     
     addSession({
       patient_id: formData.patient_id,
-      date: formData.date,
+      date: `${formData.date}T${formData.time}`,
       status: 'zakazana',
       notes: formData.notes || undefined
     });
@@ -72,6 +73,18 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
               type="date"
               value={formData.date}
               onChange={(e) => handleChange("date", e.target.value)}
+              className="rounded-xl"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="time">Vreme *</Label>
+            <Input
+              id="time"
+              type="time"
+              value={formData.time}
+              onChange={(e) => handleChange("time", e.target.value)}
               className="rounded-xl"
               required
             />

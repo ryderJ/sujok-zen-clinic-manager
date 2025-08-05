@@ -1,5 +1,5 @@
 
-import { Users, Calendar, Activity, BarChart3 } from "lucide-react";
+import { Users, Calendar, Activity, BarChart3, Database, Tag, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface SidebarProps {
@@ -12,8 +12,15 @@ export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
     { id: "dashboard", label: "Kontrolna tabla", icon: Activity },
     { id: "patients", label: "Pacijenti", icon: Users },
     { id: "therapies", label: "Terapije", icon: Calendar },
+    { id: "categories", label: "Kategorije", icon: Tag },
+    { id: "backup", label: "Backup podataka", icon: Database },
     { id: "statistics", label: "Statistike", icon: BarChart3 },
   ];
+
+  const handleLogout = () => {
+    localStorage.removeItem('neutro_admin_logged_in');
+    window.location.reload();
+  };
 
   return (
     <div className="w-64 bg-white border-r border-slate-200 min-h-screen">
@@ -47,6 +54,17 @@ export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
             );
           })}
         </nav>
+        
+        <div className="absolute bottom-6 left-6 right-6">
+          <Button 
+            variant="ghost" 
+            onClick={handleLogout}
+            className="w-full flex items-center space-x-3 px-4 py-3 text-slate-600 hover:bg-slate-50"
+          >
+            <LogOut className="w-5 h-5" />
+            <span className="font-medium">Odjavi se</span>
+          </Button>
+        </div>
       </div>
     </div>
   );

@@ -89,7 +89,7 @@ export const AddTreatmentForm = ({ patient, onClose }: AddTreatmentFormProps) =>
               type="submit" 
               className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
             >
-              Zabelež tretman
+              Zabeleži tretman
             </Button>
           </div>
         </form>
