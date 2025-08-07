@@ -26,11 +26,16 @@ export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
 
   const completedSessions = sessions.filter(s => s.status === 'odrađena');
   const totalDuration = completedSessions.reduce((sum, session) => {
-    return sum + (session.duration_minutes || 60);
+    // Koristi duration_minutes iz sesije, ili defaultno 60 ako nije definisano
+    const duration = session.duration_minutes || 60;
+    console.log(`Session ${session.id}: duration = ${duration} minutes`); // Debug log
+    return sum + duration;
   }, 0);
   const averageDuration = completedSessions.length > 0 
     ? Math.round(totalDuration / completedSessions.length)
     : 60;
+  
+  console.log(`Total sessions: ${completedSessions.length}, Total duration: ${totalDuration}, Average: ${averageDuration}`); // Debug log
   
   // Enhanced statistics
   const thisMonthSessions = sessions.filter(session => {

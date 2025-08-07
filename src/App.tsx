@@ -6,7 +6,6 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { LocalLoginForm } from "@/components/LocalLoginForm";
 import { DateTimeHeader } from "@/components/DateTimeHeader";
-import { LogoutButton } from "@/components/LogoutButton";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -44,7 +43,6 @@ const App = () => {
       <Toaster />
       <Sonner />
       <DateTimeHeader />
-      <LogoutButton onLogout={() => setIsAuthenticated(false)} />
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />

@@ -38,7 +38,11 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
   };
 
   const handleChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    if (field === "duration_minutes") {
+      setFormData(prev => ({ ...prev, [field]: parseInt(value) || 60 }));
+    } else {
+      setFormData(prev => ({ ...prev, [field]: value }));
+    }
   };
 
   return (

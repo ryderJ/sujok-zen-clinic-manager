@@ -36,17 +36,11 @@ export const DateTimeHeader = () => {
   };
 
   return (
-    <div className="fixed top-4 right-4 z-40 bg-white/90 backdrop-blur-sm rounded-2xl p-4 shadow-lg border border-slate-200">
-      <div className="flex items-center gap-3 text-sm">
-        <div className="flex items-center gap-2 text-slate-600">
-          <Calendar className="w-4 h-4" />
-          <span>{formatDate(currentTime)}</span>
-        </div>
-        <div className="w-px h-4 bg-slate-300"></div>
-        <div className="flex items-center gap-2 text-slate-600">
-          <Clock className="w-4 h-4" />
-          <span className="font-mono">{formatTime(currentTime)}</span>
-        </div>
+    <div className="fixed top-0 right-0 z-10 bg-white/80 backdrop-blur-sm px-4 py-2 text-xs text-slate-500">
+      <div className="flex items-center gap-2">
+        <span>{formatDate(currentTime)}</span>
+        <span>•</span>
+        <span className="font-mono">{formatTime(currentTime)}</span>
       </div>
     </div>
   );
