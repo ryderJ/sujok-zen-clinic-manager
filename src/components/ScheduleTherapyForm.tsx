@@ -15,7 +15,8 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
   const [formData, setFormData] = useState({
     patient_id: "",
     date: "",
-    time: "",
+    time: "09:00",
+    duration_minutes: 60,
     notes: ""
   });
 
@@ -29,6 +30,7 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
       patient_id: formData.patient_id,
       date: `${formData.date}T${formData.time}`,
       status: 'zakazana',
+      duration_minutes: formData.duration_minutes,
       notes: formData.notes || undefined
     });
     
@@ -85,6 +87,21 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
               type="time"
               value={formData.time}
               onChange={(e) => handleChange("time", e.target.value)}
+              className="rounded-xl"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="duration">Planiran trajanje (minuti) *</Label>
+            <Input
+              id="duration"
+              type="number"
+              min="15"
+              max="180"
+              step="15"
+              value={formData.duration_minutes}
+              onChange={(e) => handleChange("duration_minutes", e.target.value)}
               className="rounded-xl"
               required
             />

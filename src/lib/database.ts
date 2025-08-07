@@ -16,6 +16,7 @@ export interface TherapySession {
   patient_id: string;
   date: string;
   status: 'zakazana' | 'odrađena' | 'otkazana';
+  duration_minutes?: number;
   notes?: string;
   created_at: string;
 }
@@ -139,6 +140,13 @@ class ApiDatabase {
         body: JSON.stringify(treatment),
       });
     }
+  }
+
+  async updateTreatment(id: string, updates: Partial<Treatment>): Promise<Treatment> {
+    return await this.apiCall(`/treatments/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(updates),
+    });
   }
 
   async deleteTreatment(id: string): Promise<boolean> {

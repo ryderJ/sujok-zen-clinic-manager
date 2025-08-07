@@ -246,10 +246,6 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
                   onChange={handleImageUpload}
                   className="flex-1"
                 />
-                <Button type="button" variant="outline" size="sm">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Dodaj slike
-                </Button>
               </div>
               
               {formData.images.length > 0 && (

@@ -164,6 +164,13 @@ export const useTreatments = () => {
     return newTreatment;
   }, []);
 
+  const updateTreatment = useCallback(async (id: string, updates: Partial<Treatment>) => {
+    const updatedTreatment = await db.updateTreatment(id, updates);
+    const updatedTreatments = await db.getTreatments();
+    setTreatments(updatedTreatments);
+    return updatedTreatment;
+  }, []);
+
   const deleteTreatment = useCallback(async (id: string) => {
     const result = await db.deleteTreatment(id);
     const updatedTreatments = await db.getTreatments();
@@ -175,6 +182,7 @@ export const useTreatments = () => {
     treatments,
     loading,
     addTreatment,
+    updateTreatment,
     deleteTreatment,
   };
 };

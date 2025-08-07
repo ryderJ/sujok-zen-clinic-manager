@@ -25,9 +25,24 @@ export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
   });
 
   const completedSessions = sessions.filter(s => s.status === 'odrađena');
+  const totalDuration = completedSessions.reduce((sum, session) => {
+    return sum + (session.duration_minutes || 60);
+  }, 0);
   const averageDuration = completedSessions.length > 0 
-    ? Math.round(completedSessions.reduce((sum, session) => sum + 60, 0) / completedSessions.length)
+    ? Math.round(totalDuration / completedSessions.length)
     : 60;
+  
+  // Enhanced statistics
+  const thisMonthSessions = sessions.filter(session => {
+    const sessionDate = new Date(session.date);
+    const today = new Date();
+    const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    return sessionDate >= firstDayOfMonth && sessionDate <= today;
+  });
+  
+  const successRate = sessions.length > 0 
+    ? Math.round((completedSessions.length / sessions.length) * 100)
+    : 0;
 
   const stats = [
     {
@@ -47,9 +62,9 @@ export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
       bgColor: "bg-green-100"
     },
     {
-      title: "Ove nedelje",
-      value: thisWeekSessions.length.toString(),
-      change: "ukupno sesija",
+      title: "Ovaj mesec",
+      value: thisMonthSessions.length.toString(),
+      change: `${successRate}% uspešnost`,
       icon: TrendingUp,
       color: "text-purple-600",
       bgColor: "bg-purple-100"
@@ -57,7 +72,7 @@ export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
     {
       title: "Prosečna sesija",
       value: `${averageDuration} min`,
-      change: "prosečno trajanje",
+      change: `${totalDuration} min ukupno`,
       icon: Clock,
       color: "text-orange-600",
       bgColor: "bg-orange-100"

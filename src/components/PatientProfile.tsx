@@ -7,6 +7,7 @@ import { PDFExport } from "./PDFExport";
 import { EditSessionForm } from "./EditSessionForm";
 import { TreatmentDetailView } from "./TreatmentDetailView";
 import { TreatmentCategory } from "./TreatmentCategoryManager";
+import { PatientAgeDisplay } from "./PatientAgeDisplay";
 import { useState, useEffect } from "react";
 
 interface PatientProfileProps {
@@ -97,8 +98,9 @@ export const PatientProfile = ({
             </div>
             <div>
               <h1 className="text-2xl font-bold text-slate-800">{patient.name}</h1>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-4">
                 <p className="text-slate-500">Pacijent od {new Date(patient.created_at).getFullYear()}</p>
+                <PatientAgeDisplay dateOfBirth={patient.date_of_birth} />
                 <span className={`px-2 py-1 rounded-full text-xs font-medium ${
                   patient.is_active 
                     ? "bg-green-100 text-green-800" 

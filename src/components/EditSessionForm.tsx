@@ -14,8 +14,9 @@ interface EditSessionFormProps {
 
 export const EditSessionForm = ({ session, onSave, onCancel }: EditSessionFormProps) => {
   const [formData, setFormData] = useState({
-    date: session.date.split('T')[0],
+    date: session.date.includes('T') ? session.date : `${session.date}T09:00`,
     status: session.status,
+    duration_minutes: session.duration_minutes || 60,
     notes: session.notes || ""
   });
 
@@ -24,6 +25,7 @@ export const EditSessionForm = ({ session, onSave, onCancel }: EditSessionFormPr
     onSave({
       date: formData.date,
       status: formData.status as 'zakazana' | 'odrađena' | 'otkazana',
+      duration_minutes: formData.duration_minutes,
       notes: formData.notes
     });
   };
@@ -35,12 +37,25 @@ export const EditSessionForm = ({ session, onSave, onCancel }: EditSessionFormPr
         
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <Label htmlFor="date">Datum sesije</Label>
+            <Label htmlFor="date">Datum i vreme sesije</Label>
             <Input
               id="date"
-              type="date"
+              type="datetime-local"
               value={formData.date}
               onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="duration">Trajanje sesije (minuti)</Label>
+            <Input
+              id="duration"
+              type="number"
+              min="15"
+              max="180"
+              value={formData.duration_minutes}
+              onChange={(e) => setFormData({ ...formData, duration_minutes: parseInt(e.target.value) || 60 })}
               required
             />
           </div>
