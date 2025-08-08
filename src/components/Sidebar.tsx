@@ -23,8 +23,8 @@ export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
   };
 
   return (
-    <div className="w-64 bg-white border-r border-slate-200 min-h-screen">
-      <div className="p-6">
+    <div className="w-64 bg-white border-r border-slate-200 min-h-screen relative">
+      <div className="p-6 h-full">
         <div className="flex items-center space-x-3 mb-8">
           <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
             <Activity className="w-6 h-6 text-white" />
@@ -55,11 +55,11 @@ export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
           })}
         </nav>
         
-        <div className="absolute bottom-6 left-6 right-6">
+        <div className="absolute bottom-4 left-4 right-4">
           <Button 
             variant="ghost" 
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-4 py-3 text-slate-600 hover:bg-slate-50"
+            className="w-full flex items-center space-x-3 px-4 py-3 text-slate-600 hover:bg-slate-50 justify-start"
           >
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Odjavi se</span>

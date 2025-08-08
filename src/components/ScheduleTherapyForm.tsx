@@ -16,7 +16,6 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
     patient_id: "",
     date: "",
     time: "09:00",
-    duration_minutes: 60,
     notes: ""
   });
 
@@ -30,7 +29,6 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
       patient_id: formData.patient_id,
       date: `${formData.date}T${formData.time}`,
       status: 'zakazana',
-      duration_minutes: formData.duration_minutes,
       notes: formData.notes || undefined
     });
     
@@ -38,11 +36,7 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
   };
 
   const handleChange = (field: string, value: string) => {
-    if (field === "duration_minutes") {
-      setFormData(prev => ({ ...prev, [field]: parseInt(value) || 60 }));
-    } else {
-      setFormData(prev => ({ ...prev, [field]: value }));
-    }
+    setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   return (
@@ -96,20 +90,6 @@ export const ScheduleTherapyForm = ({ onClose }: ScheduleTherapyFormProps) => {
             />
           </div>
 
-          <div>
-            <Label htmlFor="duration">Planiran trajanje (minuti) *</Label>
-            <Input
-              id="duration"
-              type="number"
-              min="15"
-              max="180"
-              step="15"
-              value={formData.duration_minutes}
-              onChange={(e) => handleChange("duration_minutes", e.target.value)}
-              className="rounded-xl"
-              required
-            />
-          </div>
 
           <div>
             <Label htmlFor="notes">Napomene o sesiji</Label>

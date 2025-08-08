@@ -22,6 +22,7 @@ export const TreatmentDetailView = ({ treatment, categories, onClose }: Treatmen
     try {
       await updateTreatment(treatment.id, treatmentData);
       setIsEditing(false);
+      onClose();
     } catch (error) {
       console.error('Error updating treatment:', error);
     }

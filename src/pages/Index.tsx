@@ -43,7 +43,10 @@ const Index = () => {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-8">
                 <PatientsList 
-                  onPatientSelect={setSelectedPatient}
+                  onPatientSelect={(patient) => {
+                    setSelectedPatient(patient);
+                    setActiveView('patients');
+                  }}
                   onAddPatient={() => setShowAddPatient(true)}
                   onEditPatient={(patient) => {
                     setSelectedPatient(patient);
