@@ -35,20 +35,31 @@ export const TreatmentCategoryManager = () => {
   }, []);
 
   const loadCategories = () => {
-    try {
-      const stored = localStorage.getItem('neutro_treatment_categories');
-      if (stored) {
-        setCategories(JSON.parse(stored));
+    const stored = localStorage.getItem('neutro_treatment_categories');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setCategories(Array.isArray(parsed) ? parsed : []);
+      } catch (error) {
+        console.error('Error parsing categories:', error);
+        setCategories([]);
+        // Clear corrupted data
+        localStorage.removeItem('neutro_treatment_categories');
       }
-    } catch (error) {
-      console.error('Error loading categories:', error);
+    } else {
+      setCategories([]);
     }
   };
 
   const saveCategories = (updatedCategories: TreatmentCategory[]) => {
-    localStorage.setItem('neutro_treatment_categories', JSON.stringify(updatedCategories));
-    setCategories(updatedCategories);
-    window.dispatchEvent(new StorageEvent('storage'));
+    try {
+      localStorage.setItem('neutro_treatment_categories', JSON.stringify(updatedCategories));
+      setCategories(updatedCategories);
+      console.log('Categories saved:', updatedCategories);
+      window.dispatchEvent(new StorageEvent('storage'));
+    } catch (error) {
+      console.error('Error saving categories:', error);
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {

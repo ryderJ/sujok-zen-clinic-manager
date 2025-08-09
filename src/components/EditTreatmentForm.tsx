@@ -17,6 +17,7 @@ export const EditTreatmentForm = ({ treatment, onSave, onClose }: EditTreatmentF
   const [formData, setFormData] = useState({
     type: treatment.type,
     description: treatment.description,
+    duration_minutes: treatment.duration_minutes || 60,
     images: treatment.images || []
   });
   const { toast } = useToast();
@@ -36,6 +37,7 @@ export const EditTreatmentForm = ({ treatment, onSave, onClose }: EditTreatmentF
     onSave({
       type: formData.type,
       description: formData.description,
+      duration_minutes: formData.duration_minutes,
       images: formData.images.length > 0 ? formData.images : undefined
     });
   };
@@ -82,6 +84,20 @@ export const EditTreatmentForm = ({ treatment, onSave, onClose }: EditTreatmentF
               value={formData.type}
               onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
               placeholder="Tip tretmana"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="duration">Trajanje tretmana (minuti) *</Label>
+            <Input
+              id="duration"
+              type="number"
+              min="5"
+              max="240"
+              step="5"
+              value={formData.duration_minutes}
+              onChange={(e) => setFormData(prev => ({ ...prev, duration_minutes: parseInt(e.target.value) || 60 }))}
               required
             />
           </div>
@@ -147,7 +163,7 @@ export const EditTreatmentForm = ({ treatment, onSave, onClose }: EditTreatmentF
             </Button>
             <Button 
               type="submit" 
-              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
+              className="flex-1"
             >
               Sačuvaj izmene
             </Button>

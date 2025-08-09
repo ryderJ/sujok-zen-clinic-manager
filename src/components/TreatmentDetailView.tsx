@@ -22,7 +22,7 @@ export const TreatmentDetailView = ({ treatment, categories, onClose }: Treatmen
     try {
       await updateTreatment(treatment.id, treatmentData);
       setIsEditing(false);
-      onClose();
+      // Don't close the main detail view, just exit edit mode
     } catch (error) {
       console.error('Error updating treatment:', error);
     }
@@ -59,7 +59,7 @@ export const TreatmentDetailView = ({ treatment, categories, onClose }: Treatmen
 
           <div className="space-y-6">
             {/* Basic Info */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <div className="bg-slate-50 rounded-xl p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <Calendar className="w-4 h-4 text-slate-600" />
@@ -86,6 +86,16 @@ export const TreatmentDetailView = ({ treatment, categories, onClose }: Treatmen
                     </Badge>
                   )}
                 </div>
+              </div>
+
+              <div className="bg-slate-50 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-4 h-4 text-slate-600" />
+                  <span className="text-sm font-medium text-slate-600">Trajanje</span>
+                </div>
+                <p className="text-lg font-semibold text-slate-800">
+                  {treatment.duration_minutes || 60} min
+                </p>
               </div>
             </div>
 

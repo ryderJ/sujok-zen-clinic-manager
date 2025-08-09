@@ -29,6 +29,7 @@ export interface Treatment {
   type: string;
   description: string;
   category_id?: string;
+  duration_minutes?: number;
   images?: string[];
   created_at: string;
 }

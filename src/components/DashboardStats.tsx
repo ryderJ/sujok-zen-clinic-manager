@@ -1,6 +1,6 @@
 
 import { Users, Calendar, TrendingUp, Clock } from "lucide-react";
-import { usePatients, useSessions } from "@/hooks/useDatabase";
+import { usePatients, useSessions, useTreatments } from "@/hooks/useDatabase";
 
 interface DashboardStatsProps {
   fullView?: boolean;
@@ -9,6 +9,7 @@ interface DashboardStatsProps {
 export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
   const { patients } = usePatients();
   const { sessions } = useSessions();
+  const { treatments } = useTreatments();
 
   const activePatients = patients.filter(p => p.is_active);
   const todaysSessions = sessions.filter(session => {
@@ -24,18 +25,16 @@ export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
     return sessionDate >= weekAgo && sessionDate <= today;
   });
 
-  const completedSessions = sessions.filter(s => s.status === 'odrađena');
-  const totalDuration = completedSessions.reduce((sum, session) => {
-    // Koristi duration_minutes iz sesije, ili defaultno 60 ako nije definisano
-    const duration = session.duration_minutes || 60;
-    console.log(`Session ${session.id}: duration = ${duration} minutes`); // Debug log
-    return sum + duration;
-  }, 0);
-  const averageDuration = completedSessions.length > 0 
-    ? Math.round(totalDuration / completedSessions.length)
+  // Calculate average treatment duration from treatments
+  const averageTreatmentDuration = treatments.length > 0 
+    ? Math.round(treatments.reduce((sum, treatment) => {
+        const duration = treatment.duration_minutes || 60;
+        console.log(`Treatment ${treatment.id}: duration = ${duration} minutes`); // Debug log
+        return sum + duration;
+      }, 0) / treatments.length)
     : 60;
   
-  console.log(`Total sessions: ${completedSessions.length}, Total duration: ${totalDuration}, Average: ${averageDuration}`); // Debug log
+  console.log(`Total treatments: ${treatments.length}, Average treatment duration: ${averageTreatmentDuration}`); // Debug log
   
   // Enhanced statistics
   const thisMonthSessions = sessions.filter(session => {
@@ -45,6 +44,7 @@ export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
     return sessionDate >= firstDayOfMonth && sessionDate <= today;
   });
   
+  const completedSessions = sessions.filter(s => s.status === 'odrađena');
   const successRate = sessions.length > 0 
     ? Math.round((completedSessions.length / sessions.length) * 100)
     : 0;
@@ -75,9 +75,9 @@ export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
       bgColor: "bg-purple-100"
     },
     {
-      title: "Prosečna sesija",
-      value: `${averageDuration} min`,
-      change: `${totalDuration} min ukupno`,
+      title: "Prosečan tretman",
+      value: `${averageTreatmentDuration} min`,
+      change: `${treatments.length} tretmana`,
       icon: Clock,
       color: "text-orange-600",
       bgColor: "bg-orange-100"

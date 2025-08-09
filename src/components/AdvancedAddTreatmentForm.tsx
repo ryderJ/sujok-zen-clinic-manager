@@ -19,8 +19,8 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
   const [formData, setFormData] = useState({
     sessionId: "",
     categoryId: "",
-    customType: "",
     description: "",
+    duration_minutes: 60,
     images: [] as string[]
   });
   
@@ -34,7 +34,13 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
     // Load categories
     const stored = localStorage.getItem('neutro_treatment_categories');
     if (stored) {
-      setCategories(JSON.parse(stored));
+      try {
+        const parsed = JSON.parse(stored);
+        setCategories(Array.isArray(parsed) ? parsed : []);
+      } catch (error) {
+        console.error('Error parsing categories:', error);
+        setCategories([]);
+      }
     }
 
     // Filter completed sessions for this patient
@@ -44,13 +50,22 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
     setCompletedSessions(patientCompletedSessions);
   }, [sessions, patient.id]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!formData.sessionId) {
       toast({
         title: "Greška",
         description: "Morate odabrati sesiju",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    if (!formData.categoryId) {
+      toast({
+        title: "Greška",
+        description: "Morate odabrati kategoriju tretmana",
         variant: "destructive"
       });
       return;
@@ -66,39 +81,43 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
       return;
     }
 
-    let treatmentType = "";
-    if (formData.categoryId) {
-      const category = categories.find(c => c.id === formData.categoryId);
-      treatmentType = category?.name || "";
-    } else {
-      treatmentType = formData.customType;
-    }
+    const category = categories.find(c => c.id === formData.categoryId);
+    const treatmentType = category?.name || "";
 
     if (!treatmentType) {
       toast({
         title: "Greška",
-        description: "Morate odabrati kategoriju ili uneti tip tretmana",
+        description: "Morate odabrati kategoriju tretmana",
         variant: "destructive"
       });
       return;
     }
 
-    addTreatment({
-      patient_id: patient.id,
-      session_id: formData.sessionId,
-      date: selectedSession.date,
-      type: treatmentType,
-      description: formData.description,
-      category_id: formData.categoryId || undefined,
-      images: formData.images.length > 0 ? formData.images : undefined
-    });
+    try {
+      await addTreatment({
+        patient_id: patient.id,
+        session_id: formData.sessionId,
+        date: selectedSession.date,
+        type: treatmentType,
+        description: formData.description,
+        category_id: formData.categoryId,
+        duration_minutes: formData.duration_minutes,
+        images: formData.images.length > 0 ? formData.images : undefined
+      });
 
-    toast({
-      title: "Tretman zabeležen",
-      description: "Tretman je uspešno povezan sa sesijom"
-    });
-    
-    onClose();
+      toast({
+        title: "Tretman zabeležen",
+        description: "Tretman je uspešno povezan sa sesijom"
+      });
+      
+      onClose();
+    } catch (error) {
+      toast({
+        title: "Greška",
+        description: "Neuspešno dodavanje tretmana",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -128,12 +147,12 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
   const selectedCategory = categories.find(c => c.id === formData.categoryId);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="bg-background rounded-2xl p-6 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto border border-border">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-semibold text-slate-800">Dodaj tretman</h2>
-            <p className="text-sm text-slate-500">za {patient.name}</p>
+            <h2 className="text-xl font-semibold text-foreground">Dodaj tretman</h2>
+            <p className="text-sm text-muted-foreground">za {patient.name}</p>
           </div>
           <Button variant="ghost" size="sm" onClick={onClose}>
             <X className="w-4 h-4" />
@@ -173,13 +192,13 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
           </div>
 
           <div>
-            <Label htmlFor="category">Kategorija tretmana</Label>
+            <Label htmlFor="category">Kategorija tretmana *</Label>
             <Select 
               value={formData.categoryId} 
-              onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value, customType: "" }))}
+              onValueChange={(value) => setFormData(prev => ({ ...prev, categoryId: value }))}
             >
               <SelectTrigger className="w-full">
-                <SelectValue placeholder="Odaberi kategoriju ili ostavi prazno za custom tip" />
+                <SelectValue placeholder="Odaberi kategoriju tretmana" />
               </SelectTrigger>
               <SelectContent>
                 {categories.map((category) => (
@@ -191,7 +210,7 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
                       />
                       {category.name}
                       {category.description && (
-                        <span className="text-xs text-slate-500">- {category.description}</span>
+                        <span className="text-xs text-muted-foreground">- {category.description}</span>
                       )}
                     </div>
                   </SelectItem>
@@ -208,18 +227,20 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
             )}
           </div>
 
-          {!formData.categoryId && (
-            <div>
-              <Label htmlFor="customType">Custom tip tretmana *</Label>
-              <Input
-                id="customType"
-                value={formData.customType}
-                onChange={(e) => setFormData(prev => ({ ...prev, customType: e.target.value }))}
-                placeholder="Unesite tip tretmana"
-                required={!formData.categoryId}
-              />
-            </div>
-          )}
+          <div>
+            <Label htmlFor="duration">Trajanje tretmana (minuti) *</Label>
+            <Input
+              id="duration"
+              type="number"
+              min="5"
+              max="240"
+              step="5"
+              value={formData.duration_minutes}
+              onChange={(e) => setFormData(prev => ({ ...prev, duration_minutes: parseInt(e.target.value) || 60 }))}
+              className="rounded-xl"
+              required
+            />
+          </div>
 
           <div>
             <Label htmlFor="description">Opis tretmana *</Label>
@@ -228,7 +249,7 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               placeholder="Detaljno opišite tretman koji je izvršen..."
-              className="w-full px-3 py-2 rounded-xl border border-slate-200 resize-none"
+              className="w-full px-3 py-2 rounded-xl border border-input resize-none bg-background text-foreground"
               rows={4}
               required
             />
@@ -237,16 +258,14 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
           <div>
             <Label htmlFor="images">Slike tretmana</Label>
             <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Input
-                  id="images"
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleImageUpload}
-                  className="flex-1"
-                />
-              </div>
+              <Input
+                id="images"
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageUpload}
+                className="w-full"
+              />
               
               {formData.images.length > 0 && (
                 <div className="grid grid-cols-3 gap-2">
@@ -255,12 +274,13 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
                       <img 
                         src={image} 
                         alt={`Tretman ${index + 1}`}
-                        className="w-full h-20 object-cover rounded-lg border"
+                        className="w-full h-20 object-cover rounded-lg border border-border cursor-pointer hover:opacity-80 transition-opacity"
+                        onClick={() => window.open(image, '_blank')}
                       />
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
-                        className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute top-1 right-1 bg-destructive text-destructive-foreground rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         ×
                       </button>
@@ -282,8 +302,8 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
             </Button>
             <Button 
               type="submit" 
-              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white"
-              disabled={completedSessions.length === 0}
+              className="flex-1"
+              disabled={completedSessions.length === 0 || !formData.categoryId}
             >
               Zabeleži tretman
             </Button>
