@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { db, Patient, TherapySession, Treatment } from '@/lib/database';
+import { db, Patient, TherapySession, Treatment, TreatmentCategory } from '@/lib/database';
 
 export const usePatients = () => {
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -20,17 +20,19 @@ export const usePatients = () => {
 
     loadPatients();
 
-    const handleStorageChange = async () => {
-      try {
-        const patientsData = await db.getPatients();
-        setPatients(patientsData);
-      } catch (error) {
-        console.error('Failed to reload patients:', error);
+    const handleDataUpdate = async (event: CustomEvent) => {
+      if (event.detail.type === 'patients') {
+        try {
+          const patientsData = await db.getPatients();
+          setPatients(patientsData);
+        } catch (error) {
+          console.error('Failed to reload patients:', error);
+        }
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('dataUpdated', handleDataUpdate as EventListener);
+    return () => window.removeEventListener('dataUpdated', handleDataUpdate as EventListener);
   }, []);
 
   const addPatient = useCallback(async (patientData: Omit<Patient, 'id' | 'created_at'>) => {
@@ -82,17 +84,19 @@ export const useSessions = () => {
 
     loadSessions();
 
-    const handleStorageChange = async () => {
-      try {
-        const sessionsData = await db.getSessions();
-        setSessions(sessionsData);
-      } catch (error) {
-        console.error('Failed to reload sessions:', error);
+    const handleDataUpdate = async (event: CustomEvent) => {
+      if (event.detail.type === 'sessions') {
+        try {
+          const sessionsData = await db.getSessions();
+          setSessions(sessionsData);
+        } catch (error) {
+          console.error('Failed to reload sessions:', error);
+        }
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('dataUpdated', handleDataUpdate as EventListener);
+    return () => window.removeEventListener('dataUpdated', handleDataUpdate as EventListener);
   }, []);
 
   const addSession = useCallback(async (sessionData: Omit<TherapySession, 'id' | 'created_at'>) => {
@@ -144,17 +148,19 @@ export const useTreatments = () => {
 
     loadTreatments();
 
-    const handleStorageChange = async () => {
-      try {
-        const treatmentsData = await db.getTreatments();
-        setTreatments(treatmentsData);
-      } catch (error) {
-        console.error('Failed to reload treatments:', error);
+    const handleDataUpdate = async (event: CustomEvent) => {
+      if (event.detail.type === 'treatments') {
+        try {
+          const treatmentsData = await db.getTreatments();
+          setTreatments(treatmentsData);
+        } catch (error) {
+          console.error('Failed to reload treatments:', error);
+        }
       }
     };
 
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
+    window.addEventListener('dataUpdated', handleDataUpdate as EventListener);
+    return () => window.removeEventListener('dataUpdated', handleDataUpdate as EventListener);
   }, []);
 
   const addTreatment = useCallback(async (treatmentData: Omit<Treatment, 'id' | 'created_at'>, images?: File[]) => {
@@ -184,5 +190,69 @@ export const useTreatments = () => {
     addTreatment,
     updateTreatment,
     deleteTreatment,
+  };
+};
+
+export const useCategories = () => {
+  const [categories, setCategories] = useState<TreatmentCategory[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      setLoading(true);
+      try {
+        const categoriesData = await db.getCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Failed to load categories:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadCategories();
+
+    const handleDataUpdate = async (event: CustomEvent) => {
+      if (event.detail.type === 'categories') {
+        try {
+          const categoriesData = await db.getCategories();
+          setCategories(categoriesData);
+        } catch (error) {
+          console.error('Failed to reload categories:', error);
+        }
+      }
+    };
+
+    window.addEventListener('dataUpdated', handleDataUpdate as EventListener);
+    return () => window.removeEventListener('dataUpdated', handleDataUpdate as EventListener);
+  }, []);
+
+  const addCategory = useCallback(async (categoryData: Omit<TreatmentCategory, 'id' | 'created_at'>) => {
+    const newCategory = await db.addCategory(categoryData);
+    const updatedCategories = await db.getCategories();
+    setCategories(updatedCategories);
+    return newCategory;
+  }, []);
+
+  const updateCategory = useCallback(async (id: string, updates: Partial<TreatmentCategory>) => {
+    const updatedCategory = await db.updateCategory(id, updates);
+    const updatedCategories = await db.getCategories();
+    setCategories(updatedCategories);
+    return updatedCategory;
+  }, []);
+
+  const deleteCategory = useCallback(async (id: string) => {
+    const result = await db.deleteCategory(id);
+    const updatedCategories = await db.getCategories();
+    setCategories(updatedCategories);
+    return result;
+  }, []);
+
+  return {
+    categories,
+    loading,
+    addCategory,
+    updateCategory,
+    deleteCategory,
   };
 };

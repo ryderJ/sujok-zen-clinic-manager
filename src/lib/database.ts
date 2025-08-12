@@ -66,17 +66,21 @@ class Database {
   }
 
   async addPatient(patient: Omit<Patient, 'id' | 'created_at'>): Promise<Patient> {
-    return await this.apiCall('/patients', {
+    const result = await this.apiCall('/patients', {
       method: 'POST',
       body: JSON.stringify(patient),
     });
+    window.dispatchEvent(new CustomEvent('dataUpdated', { detail: { type: 'patients' } }));
+    return result;
   }
 
   async updatePatient(id: string, updates: Partial<Patient>): Promise<Patient> {
-    return await this.apiCall(`/patients/${id}`, {
+    const result = await this.apiCall(`/patients/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
+    window.dispatchEvent(new CustomEvent('dataUpdated', { detail: { type: 'patients' } }));
+    return result;
   }
 
   async deletePatient(id: string): Promise<boolean> {
@@ -90,10 +94,12 @@ class Database {
   }
 
   async addSession(session: Omit<TherapySession, 'id' | 'created_at'>): Promise<TherapySession> {
-    return await this.apiCall('/sessions', {
+    const result = await this.apiCall('/sessions', {
       method: 'POST',
       body: JSON.stringify(session),
     });
+    window.dispatchEvent(new CustomEvent('dataUpdated', { detail: { type: 'sessions' } }));
+    return result;
   }
 
   async updateSession(id: string, updates: Partial<TherapySession>): Promise<TherapySession> {
@@ -117,30 +123,44 @@ class Database {
     if (images && images.length > 0) {
       const formData = new FormData();
       Object.keys(treatment).forEach(key => {
-        formData.append(key, (treatment as any)[key]);
+        const value = (treatment as any)[key];
+        if (value !== undefined && value !== null) {
+          formData.append(key, value);
+        }
       });
       images.forEach(image => {
         formData.append('images', image);
       });
       
-      return await this.apiCall('/treatments', {
+      const response = await fetch(`${API_BASE_URL}/treatments`, {
         method: 'POST',
-        headers: {},
         body: formData,
       });
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.statusText}`);
+      }
+      
+      const result = await response.json();
+      window.dispatchEvent(new CustomEvent('dataUpdated', { detail: { type: 'treatments' } }));
+      return result;
     } else {
-      return await this.apiCall('/treatments', {
+      const result = await this.apiCall('/treatments', {
         method: 'POST',
         body: JSON.stringify(treatment),
       });
+      window.dispatchEvent(new CustomEvent('dataUpdated', { detail: { type: 'treatments' } }));
+      return result;
     }
   }
 
   async updateTreatment(id: string, updates: Partial<Treatment>): Promise<Treatment> {
-    return await this.apiCall(`/treatments/${id}`, {
+    const result = await this.apiCall(`/treatments/${id}`, {
       method: 'PUT',
       body: JSON.stringify(updates),
     });
+    window.dispatchEvent(new CustomEvent('dataUpdated', { detail: { type: 'treatments' } }));
+    return result;
   }
 
   async deleteTreatment(id: string): Promise<boolean> {
@@ -154,10 +174,12 @@ class Database {
   }
 
   async addCategory(category: Omit<TreatmentCategory, 'id' | 'created_at'>): Promise<TreatmentCategory> {
-    return await this.apiCall('/categories', {
+    const result = await this.apiCall('/categories', {
       method: 'POST',
       body: JSON.stringify(category),
     });
+    window.dispatchEvent(new CustomEvent('dataUpdated', { detail: { type: 'categories' } }));
+    return result;
   }
 
   async updateCategory(id: string, updates: Partial<TreatmentCategory>): Promise<TreatmentCategory> {

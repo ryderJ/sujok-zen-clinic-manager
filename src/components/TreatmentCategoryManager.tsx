@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
-import { db, TreatmentCategory } from "@/lib/database";
+import { useState } from "react";
+import { TreatmentCategory } from "@/lib/database";
+import { useCategories } from "@/hooks/useDatabase";
 import { Plus, Edit2, Trash2, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 
 
 export const TreatmentCategoryManager = () => {
-  const [categories, setCategories] = useState<TreatmentCategory[]>([]);
+  const { categories, addCategory, updateCategory, deleteCategory } = useCategories();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -24,41 +25,20 @@ export const TreatmentCategoryManager = () => {
     "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"
   ];
 
-  useEffect(() => {
-    loadCategories();
-    
-    const handleStorageChange = () => {
-      loadCategories();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, []);
-
-  const loadCategories = async () => {
-    try {
-      const categoriesData = await db.getCategories();
-      setCategories(categoriesData);
-    } catch (error) {
-      console.error('Error loading categories:', error);
-      setCategories([]);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     try {
       if (editingId) {
         // Update existing category
-        await db.updateCategory(editingId, formData);
+        await updateCategory(editingId, formData);
         toast({
           title: "Kategorija ažurirana",
           description: "Kategorija je uspešno ažurirana"
         });
       } else {
         // Add new category
-        await db.addCategory(formData);
+        await addCategory(formData);
         toast({
           title: "Kategorija dodana",
           description: "Nova kategorija je uspešno kreirana"
@@ -66,7 +46,6 @@ export const TreatmentCategoryManager = () => {
       }
       
       resetForm();
-      loadCategories();
     } catch (error) {
       console.error('Error saving category:', error);
       toast({
@@ -89,12 +68,11 @@ export const TreatmentCategoryManager = () => {
   const handleDelete = async (id: string) => {
     if (window.confirm('Da li ste sigurni da želite da obrišete ovu kategoriju?')) {
       try {
-        await db.deleteCategory(id);
+        await deleteCategory(id);
         toast({
           title: "Kategorija obrisana",
           description: "Kategorija je uspešno obrisana"
         });
-        loadCategories();
       } catch (error) {
         console.error('Error deleting category:', error);
         toast({
