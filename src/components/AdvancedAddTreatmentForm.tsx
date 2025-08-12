@@ -23,6 +23,7 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
     images: [] as string[]
   });
   
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [categories, setCategories] = useState<TreatmentCategory[]>([]);
   const [completedSessions, setCompletedSessions] = useState<TherapySession[]>([]);
   const { addTreatment } = useTreatments();
@@ -100,9 +101,8 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
         type: treatmentType,
         description: formData.description,
         category_id: formData.categoryId,
-        duration_minutes: formData.duration_minutes,
-        images: formData.images.length > 0 ? formData.images : undefined
-      });
+        duration_minutes: formData.duration_minutes
+      }, imageFiles);
 
       toast({
         title: "Tretman zabeležen",
@@ -123,7 +123,10 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach(file => {
+    const filesArr = Array.from(files);
+    setImageFiles(prev => [...prev, ...filesArr]);
+
+    filesArr.forEach(file => {
       const reader = new FileReader();
       reader.onload = (event) => {
         const result = event.target?.result as string;
@@ -141,6 +144,7 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
       ...prev,
       images: prev.images.filter((_, i) => i !== index)
     }));
+    setImageFiles(prev => prev.filter((_, i) => i !== index));
   };
 
   const selectedCategory = categories.find(c => c.id === formData.categoryId);
