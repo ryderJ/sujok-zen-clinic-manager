@@ -40,6 +40,7 @@ export const EditTreatmentForm = ({ treatment, onSave, onClose }: EditTreatmentF
       duration_minutes: formData.duration_minutes,
       images: formData.images.length > 0 ? formData.images : undefined
     });
+    onClose();
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

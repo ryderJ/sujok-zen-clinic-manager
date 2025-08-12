@@ -6,8 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useTreatments, useSessions } from "@/hooks/useDatabase";
-import { Patient, TherapySession } from "@/lib/database";
-import { TreatmentCategory } from "./TreatmentCategoryManager";
+import { Patient, TherapySession, TreatmentCategory, db } from "@/lib/database";
 import { useToast } from "@/hooks/use-toast";
 
 interface AdvancedAddTreatmentFormProps {
@@ -31,17 +30,17 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
   const { toast } = useToast();
 
   useEffect(() => {
-    // Load categories
-    const stored = localStorage.getItem('neutro_treatment_categories');
-    if (stored) {
+    // Load categories using the database
+    const loadCategories = async () => {
       try {
-        const parsed = JSON.parse(stored);
-        setCategories(Array.isArray(parsed) ? parsed : []);
+        const categoriesData = await db.getCategories();
+        setCategories(categoriesData);
       } catch (error) {
-        console.error('Error parsing categories:', error);
+        console.error('Error loading categories:', error);
         setCategories([]);
       }
-    }
+    };
+    loadCategories();
 
     // Filter completed sessions for this patient
     const patientCompletedSessions = sessions.filter(s => 

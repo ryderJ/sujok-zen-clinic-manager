@@ -2,11 +2,10 @@
 import { ArrowLeft, Plus, Download, Edit, Trash2, Calendar, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { usePatients, useSessions, useTreatments } from "@/hooks/useDatabase";
-import { Patient, TherapySession, Treatment } from "@/lib/database";
+import { Patient, TherapySession, Treatment, TreatmentCategory, db } from "@/lib/database";
 import { PDFExport } from "./PDFExport";
 import { EditSessionForm } from "./EditSessionForm";
 import { TreatmentDetailView } from "./TreatmentDetailView";
-import { TreatmentCategory } from "./TreatmentCategoryManager";
 import { PatientAgeDisplay } from "./PatientAgeDisplay";
 import { useState, useEffect } from "react";
 
@@ -37,10 +36,24 @@ export const PatientProfile = ({
 
   // Load categories
   useEffect(() => {
-    const stored = localStorage.getItem('neutro_treatment_categories');
-    if (stored) {
-      setCategories(JSON.parse(stored));
-    }
+    const loadCategories = async () => {
+      try {
+        const categoriesData = await db.getCategories();
+        setCategories(categoriesData);
+      } catch (error) {
+        console.error('Error loading categories:', error);
+        setCategories([]);
+      }
+    };
+    
+    loadCategories();
+    
+    const handleStorageChange = () => {
+      loadCategories();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
   
   const handleDeleteTreatment = (treatmentId: string) => {

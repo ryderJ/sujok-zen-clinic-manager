@@ -3,7 +3,7 @@ import { X, Calendar, FileText, Image as ImageIcon, Edit } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Treatment } from "@/lib/database";
-import { TreatmentCategory } from "./TreatmentCategoryManager";
+import { TreatmentCategory } from "@/lib/database";
 import { EditTreatmentForm } from "./EditTreatmentForm";
 import { useTreatments } from "@/hooks/useDatabase";
 

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { db, TreatmentCategory } from "@/lib/database";
 import { Plus, Edit2, Trash2, Tag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,13 +8,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 
-export interface TreatmentCategory {
-  id: string;
-  name: string;
-  description?: string;
-  color: string;
-  created_at: string;
-}
 
 export const TreatmentCategoryManager = () => {
   const [categories, setCategories] = useState<TreatmentCategory[]>([]);
@@ -32,68 +26,55 @@ export const TreatmentCategoryManager = () => {
 
   useEffect(() => {
     loadCategories();
+    
+    const handleStorageChange = () => {
+      loadCategories();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
-  const loadCategories = () => {
-    const stored = localStorage.getItem('neutro_treatment_categories');
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored);
-        setCategories(Array.isArray(parsed) ? parsed : []);
-      } catch (error) {
-        console.error('Error parsing categories:', error);
-        setCategories([]);
-        // Clear corrupted data
-        localStorage.removeItem('neutro_treatment_categories');
-      }
-    } else {
+  const loadCategories = async () => {
+    try {
+      const categoriesData = await db.getCategories();
+      setCategories(categoriesData);
+    } catch (error) {
+      console.error('Error loading categories:', error);
       setCategories([]);
     }
   };
 
-  const saveCategories = (updatedCategories: TreatmentCategory[]) => {
-    try {
-      localStorage.setItem('neutro_treatment_categories', JSON.stringify(updatedCategories));
-      setCategories(updatedCategories);
-      console.log('Categories saved:', updatedCategories);
-      window.dispatchEvent(new StorageEvent('storage'));
-    } catch (error) {
-      console.error('Error saving categories:', error);
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (editingId) {
-      // Update existing category
-      const updated = categories.map(cat => 
-        cat.id === editingId 
-          ? { ...cat, ...formData }
-          : cat
-      );
-      saveCategories(updated);
+    try {
+      if (editingId) {
+        // Update existing category
+        await db.updateCategory(editingId, formData);
+        toast({
+          title: "Kategorija ažurirana",
+          description: "Kategorija je uspešno ažurirana"
+        });
+      } else {
+        // Add new category
+        await db.addCategory(formData);
+        toast({
+          title: "Kategorija dodana",
+          description: "Nova kategorija je uspešno kreirana"
+        });
+      }
+      
+      resetForm();
+      loadCategories();
+    } catch (error) {
+      console.error('Error saving category:', error);
       toast({
-        title: "Kategorija ažurirana",
-        description: "Kategorija je uspešno ažurirana"
-      });
-    } else {
-      // Add new category
-      const newCategory: TreatmentCategory = {
-        id: Date.now().toString(),
-        name: formData.name,
-        description: formData.description,
-        color: formData.color,
-        created_at: new Date().toISOString()
-      };
-      saveCategories([...categories, newCategory]);
-      toast({
-        title: "Kategorija dodana",
-        description: "Nova kategorija je uspešno kreirana"
+        title: "Greška",
+        description: "Došlo je do greške prilikom čuvanja kategorije",
+        variant: "destructive"
       });
     }
-    
-    resetForm();
   };
 
   const handleEdit = (category: TreatmentCategory) => {
@@ -105,14 +86,23 @@ export const TreatmentCategoryManager = () => {
     });
   };
 
-  const handleDelete = (id: string) => {
+  const handleDelete = async (id: string) => {
     if (window.confirm('Da li ste sigurni da želite da obrišete ovu kategoriju?')) {
-      const updated = categories.filter(cat => cat.id !== id);
-      saveCategories(updated);
-      toast({
-        title: "Kategorija obrisana",
-        description: "Kategorija je uspešno obrisana"
-      });
+      try {
+        await db.deleteCategory(id);
+        toast({
+          title: "Kategorija obrisana",
+          description: "Kategorija je uspešno obrisana"
+        });
+        loadCategories();
+      } catch (error) {
+        console.error('Error deleting category:', error);
+        toast({
+          title: "Greška",
+          description: "Došlo je do greške prilikom brisanja kategorije",
+          variant: "destructive"
+        });
+      }
     }
   };
 
