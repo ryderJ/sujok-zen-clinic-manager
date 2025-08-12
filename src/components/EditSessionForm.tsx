@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { TherapySession } from "@/lib/database";
+import { useToast } from "@/hooks/use-toast";
 
 interface EditSessionFormProps {
   session: TherapySession;
@@ -19,9 +20,19 @@ export const EditSessionForm = ({ session, onSave, onCancel }: EditSessionFormPr
     duration_minutes: session.duration_minutes || 60,
     notes: session.notes || ""
   });
+  const { toast } = useToast();
+  const isFuture = new Date(formData.date).getTime() > Date.now();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (isFuture && formData.status === 'odrađena') {
+      toast({
+        title: 'Nije moguće',
+        description: 'Buduće sesije ne mogu biti označene kao odrađene. Izaberite „otkazana” ili promenite datum.',
+        variant: 'destructive',
+      });
+      return;
+    }
     onSave({
       date: formData.date,
       status: formData.status as 'zakazana' | 'odrađena' | 'otkazana',
@@ -71,7 +82,7 @@ export const EditSessionForm = ({ session, onSave, onCancel }: EditSessionFormPr
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="zakazana">Zakazana</SelectItem>
-                <SelectItem value="odrađena">Odrađena</SelectItem>
+                <SelectItem value="odrađena" disabled={isFuture}>Odrađena</SelectItem>
                 <SelectItem value="otkazana">Otkazana</SelectItem>
               </SelectContent>
             </Select>
