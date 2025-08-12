@@ -36,7 +36,7 @@ export const DateTimeHeader = () => {
   };
 
   return (
-    <div className="fixed top-0 right-0 z-10 bg-white/80 backdrop-blur-sm px-4 py-2 text-xs text-slate-500">
+    <div className="hidden md:block fixed top-0 right-0 z-10 bg-background/80 backdrop-blur px-4 py-2 text-xs text-muted-foreground">
       <div className="flex items-center gap-2">
         <span>{formatDate(currentTime)}</span>
         <span>•</span>

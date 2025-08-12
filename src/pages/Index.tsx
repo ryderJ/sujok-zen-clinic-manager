@@ -15,6 +15,10 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { FloatingActionButton } from "@/components/FloatingActionButton";
 import { Patient } from "@/lib/database";
 
+// Mobile UI
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Menu } from "lucide-react";
 const Index = () => {
   const [activeView, setActiveView] = useState("dashboard");
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
@@ -106,10 +110,30 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex w-full">
-      <Sidebar activeView={activeView} onViewChange={setActiveView} />
+    <div className="min-h-screen bg-background flex w-full">
+      {/* Mobile header with drawer menu */}
+      <div className="md:hidden sticky top-0 z-40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+        <div className="flex items-center h-14 px-4 gap-2">
+          <Sheet>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Otvori meni">
+                <Menu className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left" className="p-0 w-[280px]">
+              <Sidebar activeView={activeView} onViewChange={setActiveView} />
+            </SheetContent>
+          </Sheet>
+          <span className="text-sm font-semibold text-foreground">Neutro Admin</span>
+        </div>
+      </div>
+
+      {/* Desktop sidebar */}
+      <div className="hidden md:block">
+        <Sidebar activeView={activeView} onViewChange={setActiveView} />
+      </div>
       
-      <main className="flex-1 p-8">
+      <main className="flex-1 p-4 md:p-8">
         {renderMainContent()}
       </main>
 
