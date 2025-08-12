@@ -75,7 +75,7 @@ export const PatientsList = ({
     return (
       <div
         key={patient.id}
-        className="p-4 rounded-xl border border-slate-200 hover:border-blue-200 hover:bg-blue-50 transition-colors"
+        className="p-4 rounded-xl border border-slate-200 hover:border-primary/30 hover:bg-primary/10 transition-colors"
       >
         <div className="flex items-center justify-between">
           <div 
@@ -110,7 +110,7 @@ export const PatientsList = ({
           </div>
           <div className="flex items-center space-x-2">
             <div className="text-right mr-4">
-              <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium mb-2">
+              <div className="bg-primary/15 text-primary px-3 py-1 rounded-full text-sm font-medium mb-2">
                 {sessionCount} sesija
               </div>
               {lastVisit && (
@@ -133,7 +133,7 @@ export const PatientsList = ({
                 e.stopPropagation();
                 onEditPatient(patient);
               }}
-              className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+              className="text-primary hover:text-primary/90 hover:bg-primary/10"
             >
               <Edit className="w-4 h-4" />
             </Button>
@@ -170,7 +170,7 @@ export const PatientsList = ({
         <h2 className="text-xl font-semibold text-slate-800">Pacijenti</h2>
         <Button 
           onClick={onAddPatient}
-          className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
         >
           <Plus className="w-4 h-4 mr-2" />
           Dodaj pacijenta
@@ -232,7 +232,7 @@ export const PatientsList = ({
 
           {(activePatients.length + inactivePatients.length) > 6 && (
             <div className="mt-2 text-center">
-              <Button variant="ghost" className="text-blue-600 hover:text-blue-700">
+              <Button variant="ghost" className="text-primary hover:text-primary/90">
                 Prikaži sve pacijente ({activePatients.length + inactivePatients.length})
               </Button>
             </div>

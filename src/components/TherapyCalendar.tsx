@@ -119,7 +119,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
     const patient = patients.find(p => p.id === session.patient_id);
     
     return (
-      <div key={session.id} className="p-4 rounded-xl border border-slate-200 hover:border-blue-200 transition-colors cursor-pointer"
+      <div key={session.id} className="p-4 rounded-xl border border-slate-200 hover:border-primary/30 transition-colors cursor-pointer"
            onClick={() => openSessionModal(session)}>
         <div className="flex items-center justify-between">
           <div className="flex-1">
@@ -189,7 +189,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
           <h2 className="text-xl font-semibold text-slate-800">Terapijske sesije</h2>
           <Button 
             onClick={onScheduleTherapy}
-            className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
           >
             <Plus className="w-4 h-4 mr-2" />
             Zakaži sesiju

@@ -52,8 +52,8 @@ export const LocalLoginForm = ({ onLogin }: LocalLoginFormProps) => {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-4">
-            <div className="w-12 h-12 bg-blue-500 rounded-xl flex items-center justify-center">
-              <Activity className="w-8 h-8 text-white" />
+            <div className="w-12 h-12 bg-primary rounded-xl flex items-center justify-center text-primary-foreground">
+              <Activity className="w-8 h-8 text-primary-foreground" />
             </div>
           </div>
           <CardTitle className="text-2xl font-bold">Neutro Admin</CardTitle>

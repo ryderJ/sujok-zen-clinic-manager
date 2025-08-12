@@ -123,7 +123,7 @@ export const AddPatientForm = ({ onClose }: AddPatientFormProps) => {
             </Button>
             <Button 
               type="submit" 
-              className="flex-1 bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
+              className="flex-1 bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
             >
               Dodaj pacijenta
             </Button>

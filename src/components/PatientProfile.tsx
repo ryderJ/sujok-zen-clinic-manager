@@ -104,8 +104,8 @@ export const PatientProfile = ({
       <div className="bg-white rounded-2xl p-6 border border-slate-200">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center">
-              <span className="text-2xl font-bold text-blue-600">
+            <div className="w-16 h-16 bg-primary/15 rounded-2xl flex items-center justify-center">
+              <span className="text-2xl font-bold text-primary">
                 {patient.name.split(' ').map((n: string) => n[0]).join('')}
               </span>
             </div>
@@ -133,7 +133,7 @@ export const PatientProfile = ({
             <Button 
               onClick={onEditPatient}
               variant="outline" 
-              className="rounded-xl text-blue-600 hover:text-blue-700"
+              className="rounded-xl text-primary hover:text-primary/90"
             >
               <Edit className="w-4 h-4 mr-2" />
               Izmeni
@@ -141,7 +141,7 @@ export const PatientProfile = ({
             {patient.is_active && (
               <Button 
                 onClick={onAddTreatment}
-                className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
               >
                 <Plus className="w-4 h-4 mr-2" />
                 Dodaj tretman
@@ -176,11 +176,11 @@ export const PatientProfile = ({
         <h2 className="text-lg font-semibold text-slate-800 mb-4">Statistike pacijenta</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-          <div className="bg-blue-50 rounded-xl p-4">
+          <div className="bg-primary/10 rounded-xl p-4">
             <div className="flex items-center space-x-3">
-              <Calendar className="w-8 h-8 text-blue-600" />
+              <Calendar className="w-8 h-8 text-primary" />
               <div>
-                <p className="text-2xl font-bold text-blue-600">{totalSessions}</p>
+                <p className="text-2xl font-bold text-primary">{totalSessions}</p>
                 <p className="text-sm text-slate-600">Ukupno sesija</p>
               </div>
             </div>
@@ -247,7 +247,7 @@ export const PatientProfile = ({
                         variant="ghost"
                         size="sm"
                         onClick={() => setEditingSession(session)}
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                        className="text-primary hover:text-primary/90 hover:bg-primary/10"
                       >
                         <Edit className="w-4 h-4" />
                       </Button>
@@ -273,7 +273,7 @@ export const PatientProfile = ({
       <div className="bg-white rounded-2xl p-6 border border-slate-200">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-slate-800">Istorija tretmana</h2>
-          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
+          <div className="bg-primary/15 text-primary px-3 py-1 rounded-full text-sm font-medium">
             {patientTreatments.length} tretmana
           </div>
         </div>
@@ -281,12 +281,12 @@ export const PatientProfile = ({
         {patientTreatments.length > 0 ? (
           <div className="space-y-6">
             {patientTreatments.map((treatment, index) => (
-              <div key={treatment.id} className="border-l-4 border-blue-200 pl-6 pb-6 relative">
+              <div key={treatment.id} className="border-l-4 border-primary/30 pl-6 pb-6 relative">
                 {index < patientTreatments.length - 1 && (
                   <div className="absolute left-0 top-8 w-px h-full bg-slate-200"></div>
                 )}
                 
-                <div className="absolute -left-2 top-0 w-4 h-4 bg-blue-500 rounded-full"></div>
+                <div className="absolute -left-2 top-0 w-4 h-4 bg-primary rounded-full"></div>
                 
                 <div 
                   className="bg-slate-50 rounded-xl p-4 cursor-pointer hover:bg-slate-100 transition-colors"

@@ -55,8 +55,8 @@ export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
       value: patients.length.toString(),
       change: `${activePatients.length} aktivnih`,
       icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100"
+      color: "text-primary",
+      bgColor: "bg-primary/15"
     },
     {
       title: "Sesije danas",

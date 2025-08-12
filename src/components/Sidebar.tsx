@@ -23,15 +23,15 @@ export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
   };
 
   return (
-    <div className="w-64 bg-white border-r border-slate-200 min-h-screen relative">
+    <div className="w-64 bg-sidebar border-r border-sidebar-border text-sidebar-foreground min-h-screen relative">
       <div className="p-6 h-full">
         <div className="flex items-center space-x-3 mb-8">
-          <div className="w-10 h-10 bg-blue-500 rounded-xl flex items-center justify-center">
-            <Activity className="w-6 h-6 text-white" />
+          <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-primary-foreground">
+            <Activity className="w-6 h-6 text-primary-foreground" />
           </div>
           <div>
-            <h2 className="font-bold text-slate-800">Neutro</h2>
-            <p className="text-sm text-slate-500">Goran Topalović</p>
+            <h2 className="font-bold text-heading">Neutro</h2>
+            <p className="text-sm text-muted-foreground">Goran Topalović</p>
           </div>
         </div>
         
@@ -44,8 +44,8 @@ export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
                 onClick={() => onViewChange(item.id)}
                 className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-colors ${
                   activeView === item.id
-                    ? "bg-blue-50 text-blue-600 border border-blue-200"
-                    : "text-slate-600 hover:bg-slate-50"
+                    ? "bg-primary/10 text-primary border border-primary/30"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 }`}
               >
                 <Icon className="w-5 h-5" />
@@ -59,7 +59,7 @@ export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
           <Button 
             variant="ghost" 
             onClick={handleLogout}
-            className="w-full flex items-center space-x-3 px-4 py-3 text-slate-600 hover:bg-slate-50 justify-start"
+            className="w-full flex items-center space-x-3 px-4 py-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground justify-start"
           >
             <LogOut className="w-5 h-5" />
             <span className="font-medium">Odjavi se</span>

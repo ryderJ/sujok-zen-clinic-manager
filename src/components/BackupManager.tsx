@@ -111,7 +111,7 @@ export const BackupManager = () => {
   return (
     <div className="max-w-4xl mx-auto p-6 space-y-6">
       <div className="flex items-center gap-3 mb-6">
-        <Database className="w-8 h-8 text-blue-500" />
+        <Database className="w-8 h-8 text-primary" />
         <div>
           <h1 className="text-2xl font-bold text-slate-800">Upravljanje podacima</h1>
           <p className="text-slate-600">Kreiranje backup-a i uvoz podataka</p>
@@ -148,7 +148,7 @@ export const BackupManager = () => {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Upload className="w-5 h-5 text-blue-500" />
+              <Upload className="w-5 h-5 text-primary" />
               Uvezi podatke
             </CardTitle>
           </CardHeader>
@@ -168,8 +168,8 @@ export const BackupManager = () => {
               />
             </div>
             {importing && (
-              <div className="flex items-center gap-2 text-sm text-blue-600">
-                <div className="w-4 h-4 border-2 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+              <div className="flex items-center gap-2 text-sm text-primary">
+                <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
                 Uvozim podatke...
               </div>
             )}
