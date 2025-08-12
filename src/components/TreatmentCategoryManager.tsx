@@ -125,30 +125,30 @@ export const TreatmentCategoryManager = () => {
               />
             </div>
             
-            <div>
-              <Label>Boja kategorije</Label>
-              <div className="flex gap-2 mt-2">
-                {colors.map(color => (
-                  <button
-                    key={color}
-                    type="button"
-                    className={`w-8 h-8 rounded-full border-2 ${
-                      formData.color === color ? 'border-slate-800' : 'border-slate-200'
-                    }`}
-                    style={{ backgroundColor: color }}
-                    onClick={() => setFormData(prev => ({ ...prev, color }))}
-                  />
-                ))}
+              <div>
+                <Label>Boja kategorije</Label>
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {colors.map(color => (
+                    <button
+                      key={color}
+                      type="button"
+                      className={`w-8 h-8 rounded-full border-2 ${
+                        formData.color === color ? 'border-slate-800' : 'border-slate-200'
+                      }`}
+                      style={{ backgroundColor: color }}
+                      onClick={() => setFormData(prev => ({ ...prev, color }))}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
             
-            <div className="flex gap-2">
-              <Button type="submit" className="flex-1">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <Button type="submit" size="sm" className="w-full">
                 <Plus className="w-4 h-4 mr-2" />
                 {editingId ? "Ažuriraj" : "Dodaj"} kategoriju
               </Button>
               {editingId && (
-                <Button type="button" variant="outline" onClick={resetForm}>
+                <Button type="button" size="sm" variant="outline" onClick={resetForm} className="w-full">
                   Otkaži
                 </Button>
               )}
@@ -167,20 +167,23 @@ export const TreatmentCategoryManager = () => {
           ) : (
             <div className="space-y-3">
               {categories.map(category => (
-                <div key={category.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div className="flex items-center gap-3">
+                <div key={category.id} className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 p-3 border rounded-lg">
+                  <div className="flex min-w-0 items-center gap-3 flex-1">
                     <Badge style={{ backgroundColor: category.color, color: 'white' }}>
                       {category.name}
                     </Badge>
                     {category.description && (
-                      <span className="text-sm text-slate-600">{category.description}</span>
+                      <span className="text-sm text-slate-600 break-words">
+                        {category.description}
+                      </span>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 w-full sm:w-auto">
                     <Button
                       size="sm"
                       variant="outline"
                       onClick={() => handleEdit(category)}
+                      className="flex-1 sm:flex-none"
                     >
                       <Edit2 className="w-4 h-4" />
                     </Button>
@@ -188,7 +191,7 @@ export const TreatmentCategoryManager = () => {
                       size="sm"
                       variant="outline"
                       onClick={() => handleDelete(category.id)}
-                      className="text-red-600 hover:text-red-700"
+                      className="text-red-600 hover:text-red-700 flex-1 sm:flex-none"
                     >
                       <Trash2 className="w-4 h-4" />
                     </Button>

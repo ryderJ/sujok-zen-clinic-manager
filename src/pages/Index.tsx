@@ -120,7 +120,7 @@ const Index = () => {
                 <Menu className="h-5 w-5" />
               </Button>
             </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[280px]">
+            <SheetContent side="left" className="p-0 w-[85vw] max-w-[320px] z-[60]">
               <Sidebar activeView={activeView} onViewChange={setActiveView} />
             </SheetContent>
           </Sheet>

@@ -182,7 +182,7 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Odaberi završenu sesiju" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50 bg-popover">
                 {completedSessions.map((session) => (
                   <SelectItem key={session.id} value={session.id}>
                     <div className="flex items-center gap-2">
@@ -205,7 +205,7 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
               <SelectTrigger className="w-full">
                 <SelectValue placeholder="Odaberi kategoriju tretmana" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="z-50 bg-popover">
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
