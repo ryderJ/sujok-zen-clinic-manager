@@ -220,6 +220,27 @@ app.post('/api/treatments', upload.array('images', 10), (req, res) => {
   }
 });
 
+// Update treatment (JSON fields). To update images, use the creation route or a dedicated upload route.
+app.put('/api/treatments/:id', (req, res) => {
+  const treatments = readData('treatments');
+  const index = treatments.findIndex(t => t.id === req.params.id);
+
+  if (index === -1) {
+    return res.status(404).json({ error: 'Treatment not found' });
+  }
+
+  const updates = { ...req.body };
+  // Preserve existing images unless explicitly provided
+  const images = updates.images !== undefined ? updates.images : treatments[index].images;
+  treatments[index] = { ...treatments[index], ...updates, images };
+
+  if (writeData('treatments', treatments)) {
+    res.json(treatments[index]);
+  } else {
+    res.status(500).json({ error: 'Failed to update treatment' });
+  }
+});
+
 app.delete('/api/treatments/:id', (req, res) => {
   const treatments = readData('treatments');
   const filteredTreatments = treatments.filter(t => t.id !== req.params.id);

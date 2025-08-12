@@ -17,21 +17,20 @@ export const AddTreatmentForm = ({ patient, onClose }: AddTreatmentFormProps) =>
     type: "",
     description: ""
   });
+  const [images, setImages] = useState<File[]>([]);
 
   const { addTreatment } = useTreatments();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    addTreatment({
-      patient_id: patient.id,
-      date: new Date().toISOString().split('T')[0],
-      type: formData.type,
-      description: formData.description
-    });
-    
-    onClose();
-  };
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  await addTreatment({
+    patient_id: patient.id,
+    date: new Date().toISOString().split('T')[0],
+    type: formData.type,
+    description: formData.description
+  }, images);
+  onClose();
+};
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -74,6 +73,21 @@ export const AddTreatmentForm = ({ patient, onClose }: AddTreatmentFormProps) =>
               rows={4}
               required
             />
+          </div>
+
+          <div>
+            <Label htmlFor="images">Slike (opciono)</Label>
+            <Input
+              id="images"
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => setImages(Array.from(e.target.files || []))}
+              className="rounded-xl"
+            />
+            {images.length > 0 && (
+              <p className="text-xs text-slate-500 mt-1">{images.length} slika spremno za upload</p>
+            )}
           </div>
 
           <div className="flex space-x-3 pt-4">

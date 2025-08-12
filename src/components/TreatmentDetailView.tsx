@@ -18,6 +18,15 @@ export const TreatmentDetailView = ({ treatment, categories, onClose }: Treatmen
   const [isEditing, setIsEditing] = useState(false);
   const { updateTreatment } = useTreatments();
 
+  const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
+  const UPLOAD_HOST = API_BASE.replace('/api', '');
+  const resolveImage = (src: string) => {
+    if (!src) return src;
+    if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) return src;
+    const normalized = src.startsWith('/uploads') ? src : `/uploads/${src.replace(/^\/?/, '')}`;
+    return `${UPLOAD_HOST}${normalized}`;
+  };
+
   const handleSave = async (treatmentData: Partial<Treatment>) => {
     try {
       await updateTreatment(treatment.id, treatmentData);
@@ -123,7 +132,7 @@ export const TreatmentDetailView = ({ treatment, categories, onClose }: Treatmen
                       onClick={() => setSelectedImageIndex(index)}
                     >
                       <img 
-                        src={image} 
+                        src={resolveImage(image)} 
                         alt={`Tretman ${index + 1}`}
                         className="w-full h-32 object-cover rounded-lg border hover:opacity-80 transition-opacity"
                       />
@@ -166,7 +175,7 @@ export const TreatmentDetailView = ({ treatment, categories, onClose }: Treatmen
         >
           <div className="relative max-w-4xl max-h-[90vh] mx-4">
             <img 
-              src={treatment.images[selectedImageIndex]} 
+              src={resolveImage(treatment.images[selectedImageIndex])} 
               alt={`Tretman ${selectedImageIndex + 1}`}
               className="max-w-full max-h-full object-contain rounded-lg"
             />
