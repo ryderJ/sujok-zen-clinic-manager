@@ -101,7 +101,7 @@ export const PatientProfile = ({
       </div>
 
       {/* Patient Header */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center space-x-4">
             <div className="w-16 h-16 bg-primary/15 rounded-2xl flex items-center justify-center">
@@ -124,7 +124,7 @@ export const PatientProfile = ({
               </div>
             </div>
           </div>
-          <div className="flex space-x-3">
+          <div className="flex flex-wrap gap-2 sm:space-x-3">
             <PDFExport 
               patient={patient}
               sessions={patientSessions}
@@ -172,7 +172,7 @@ export const PatientProfile = ({
       </div>
 
       {/* Patient Statistics */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200">
         <h2 className="text-lg font-semibold text-slate-800 mb-4">Statistike pacijenta</h2>
         
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
@@ -261,7 +261,7 @@ export const PatientProfile = ({
 
       {/* Health Notes */}
       {patient.notes && (
-        <div className="bg-white rounded-2xl p-6 border border-slate-200">
+        <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200">
           <h2 className="text-lg font-semibold text-slate-800 mb-4">Zdravstveno stanje i napomene</h2>
           <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
             <p className="text-slate-700">{patient.notes}</p>
@@ -270,7 +270,7 @@ export const PatientProfile = ({
       )}
 
       {/* Treatment History */}
-      <div className="bg-white rounded-2xl p-6 border border-slate-200">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg font-semibold text-slate-800">Istorija tretmana</h2>
           <div className="bg-primary/15 text-primary px-3 py-1 rounded-full text-sm font-medium">
@@ -280,47 +280,59 @@ export const PatientProfile = ({
 
         {patientTreatments.length > 0 ? (
           <div className="space-y-6">
-            {patientTreatments.map((treatment, index) => (
-              <div key={treatment.id} className="border-l-4 border-primary/30 pl-6 pb-6 relative">
-                {index < patientTreatments.length - 1 && (
-                  <div className="absolute left-0 top-8 w-px h-full bg-slate-200"></div>
-                )}
-                
-                <div className="absolute -left-2 top-0 w-4 h-4 bg-primary rounded-full"></div>
-                
-                <div 
-                  className="bg-slate-50 rounded-xl p-4 cursor-pointer hover:bg-slate-100 transition-colors"
-                  onClick={() => setSelectedTreatment(treatment)}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center space-x-3">
-                      <span className="font-semibold text-slate-800">
-                        {new Date(treatment.date).toLocaleDateString('sr-RS')}
-                      </span>
-                      <span className="text-sm text-slate-500">
-                        {treatment.type}
-                      </span>
-                    </div>
-                    <div className="flex space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteTreatment(treatment.id);
-                        }}
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
+            {[...patientTreatments]
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+              .map((treatment, index) => {
+                const hasTime = typeof treatment.date === 'string' && treatment.date.includes('T')
+                const timeStr = hasTime ? new Date(treatment.date).toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' }) : null
+                return (
+                  <div key={treatment.id} className="border-l-4 border-primary/30 pl-6 pb-6 relative">
+                    {index < patientTreatments.length - 1 && (
+                      <div className="absolute left-0 top-8 w-px h-full bg-slate-200"></div>
+                    )}
+                    
+                    <div className="absolute -left-2 top-0 w-4 h-4 bg-primary rounded-full"></div>
+                    
+                    <div 
+                      className="bg-slate-50 rounded-xl p-4 cursor-pointer hover:bg-slate-100 transition-colors"
+                      onClick={() => setSelectedTreatment(treatment)}
+                    >
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                          <span className="font-semibold text-slate-800">
+                            {new Date(treatment.date).toLocaleDateString('sr-RS')}
+                          </span>
+                          {timeStr && (
+                            <span className="text-xs text-slate-500">u {timeStr}</span>
+                          )}
+                          {typeof treatment.duration_minutes === 'number' && (
+                            <span className="text-xs text-slate-500">{treatment.duration_minutes} min</span>
+                          )}
+                          <span className="text-sm text-slate-500">
+                            {treatment.type}
+                          </span>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteTreatment(treatment.id);
+                            }}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      <p className="text-sm text-slate-600 line-clamp-2">{treatment.description}</p>
+                      <p className="text-xs text-slate-400 mt-2">Kliknite za detalje</p>
                     </div>
                   </div>
-                  
-                  <p className="text-sm text-slate-600 line-clamp-2">{treatment.description}</p>
-                  <p className="text-xs text-slate-400 mt-2">Kliknite za detalje</p>
-                </div>
-              </div>
-            ))}
+                )
+              })}
           </div>
         ) : (
           <p className="text-slate-500 text-center py-8">Nema zabeleženih tretmana za ovog pacijenta</p>

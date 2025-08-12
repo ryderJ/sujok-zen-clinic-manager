@@ -156,7 +156,7 @@ export const PatientsList = ({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl p-6 border border-slate-200">
+      <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200">
         <div className="flex items-center justify-center py-8">
           <div className="text-slate-500">Učitavam pacijente...</div>
         </div>
@@ -165,7 +165,7 @@ export const PatientsList = ({
   }
 
   return (
-    <div className="bg-white rounded-2xl p-6 border border-slate-200">
+    <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-slate-800">Pacijenti</h2>
         <Button 

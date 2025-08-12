@@ -25,7 +25,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   await addTreatment({
     patient_id: patient.id,
-    date: new Date().toISOString().split('T')[0],
+    date: new Date().toISOString(),
     type: formData.type,
     description: formData.description
   }, images);

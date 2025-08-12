@@ -26,7 +26,7 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [categories, setCategories] = useState<TreatmentCategory[]>([]);
   const [completedSessions, setCompletedSessions] = useState<TherapySession[]>([]);
-  const { addTreatment } = useTreatments();
+  const { addTreatment, treatments } = useTreatments();
   const { sessions } = useSessions();
   const { toast } = useToast();
 
@@ -43,12 +43,14 @@ export const AdvancedAddTreatmentForm = ({ patient, onClose }: AdvancedAddTreatm
     };
     loadCategories();
 
-    // Filter completed sessions for this patient
-    const patientCompletedSessions = sessions.filter(s => 
-      s.patient_id === patient.id && s.status === 'odrađena'
-    );
+    // Filter completed sessions for this patient and exclude those already used for a treatment
+    const usedSessionIds = new Set((treatments || []).filter(t => t.session_id).map(t => t.session_id as string));
+    const patientCompletedSessions = sessions
+      .filter(s => s.patient_id === patient.id && s.status === 'odrađena')
+      .filter(s => !usedSessionIds.has(s.id))
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     setCompletedSessions(patientCompletedSessions);
-  }, [sessions, patient.id]);
+  }, [sessions, patient.id, treatments]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

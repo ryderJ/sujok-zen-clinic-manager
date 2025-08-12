@@ -2,6 +2,7 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Patient, TherapySession, Treatment } from "@/lib/database";
 import jsPDF from 'jspdf';
+import exifr from 'exifr';
 
 interface PDFExportProps {
   patient: Patient;
@@ -49,7 +50,7 @@ export const PDFExport = ({ patient, sessions, treatments }: PDFExportProps) => 
     doc.setLanguage('sr');
     
     // Professional header with styling
-    doc.setFillColor(59, 130, 246); // Blue background
+    doc.setFillColor(16, 185, 129); // Brand green background
     doc.rect(0, 0, 210, 50, 'F');
     
     // Logo/Icon area
@@ -113,7 +114,7 @@ export const PDFExport = ({ patient, sessions, treatments }: PDFExportProps) => 
     yPosition += 10;
     
     // Statistics section with professional styling
-    doc.setFillColor(59, 130, 246);
+    doc.setFillColor(16, 185, 129);
     doc.rect(15, yPosition, 180, 8, 'F');
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(12);
@@ -178,16 +179,59 @@ export const PDFExport = ({ patient, sessions, treatments }: PDFExportProps) => 
       doc.setFontSize(10);
       let treatmentIndex = 0;
 
-      // Helper to fetch image as data URL
-      const fetchAsDataURL = async (url: string) => {
+      // Helper to fetch image and normalize EXIF orientation
+      const fetchAndNormalizeImage = async (url: string) => {
         try {
           const res = await fetch(url);
           const blob = await res.blob();
-          return await new Promise<string>((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
+
+          let orientation: number | undefined;
+          try {
+            const meta: any = await exifr.parse(blob, ['Orientation']);
+            orientation = meta?.Orientation || meta?.orientation;
+          } catch {}
+
+          const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const image = new Image();
+            image.onload = () => resolve(image);
+            image.onerror = reject as any;
+            image.src = URL.createObjectURL(blob);
           });
+
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d')!;
+          let w = img.naturalWidth;
+          let h = img.naturalHeight;
+
+          const rotate90 = orientation === 6;   // 90 CW
+          const rotate180 = orientation === 3;  // 180
+          const rotate270 = orientation === 8;  // 90 CCW
+
+          if (rotate90 || rotate270) {
+            canvas.width = h;
+            canvas.height = w;
+          } else {
+            canvas.width = w;
+            canvas.height = h;
+          }
+
+          ctx.save();
+          if (rotate90) {
+            ctx.translate(canvas.width, 0);
+            ctx.rotate(Math.PI / 2);
+          } else if (rotate180) {
+            ctx.translate(canvas.width, canvas.height);
+            ctx.rotate(Math.PI);
+          } else if (rotate270) {
+            ctx.translate(0, canvas.height);
+            ctx.rotate(-Math.PI / 2);
+          }
+          ctx.drawImage(img, 0, 0, w, h);
+          ctx.restore();
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.9);
+          URL.revokeObjectURL(img.src);
+          return dataUrl;
         } catch (e) {
           console.warn('Could not load image for PDF', e);
           return '';
@@ -224,7 +268,7 @@ export const PDFExport = ({ patient, sessions, treatments }: PDFExportProps) => 
               doc.addPage();
               yPosition = 30;
             }
-            const dataUrl = await fetchAsDataURL(imgUrl);
+            const dataUrl = await fetchAndNormalizeImage(imgUrl);
             if (dataUrl) {
               const isPng = dataUrl.startsWith('data:image/png');
               doc.addImage(dataUrl, isPng ? 'PNG' : 'JPEG', x, yPosition, thumbSize, thumbSize);
@@ -248,7 +292,7 @@ export const PDFExport = ({ patient, sessions, treatments }: PDFExportProps) => 
       doc.setPage(i);
       
       // Footer line
-      doc.setDrawColor(59, 130, 246);
+      doc.setDrawColor(16, 185, 129);
       doc.line(15, 285, 195, 285);
       
       doc.setFontSize(8);
