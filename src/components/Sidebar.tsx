@@ -31,7 +31,7 @@ export const Sidebar = ({ activeView, onViewChange }: SidebarProps) => {
           </div>
           <div>
             <h2 className="font-bold text-slate-800">Neutro</h2>
-            <p className="text-sm text-slate-500">Dr Goran Topalović</p>
+            <p className="text-sm text-slate-500">Goran Topalović</p>
           </div>
         </div>
         

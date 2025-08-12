@@ -4,6 +4,7 @@ import { Plus, Clock, CheckCircle, Calendar as CalendarIcon, Trash2, Check, Filt
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { usePatients, useSessions } from "@/hooks/useDatabase";
+import { useToast } from "@/hooks/use-toast";
 
 interface TherapyCalendarProps {
   onScheduleTherapy: () => void;
@@ -20,6 +21,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
 
   const { sessions, updateSession, deleteSession } = useSessions();
   const { patients } = usePatients();
+  const { toast } = useToast();
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -55,9 +57,24 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
   };
 
   const updateSessionStatus = (sessionId: string, status: 'odrađena' | 'otkazana' | 'zakazana') => {
+    const session = sessions.find(s => s.id === sessionId);
+    if (!session) return;
+
+    if (status === 'odrađena') {
+      const isFuture = new Date(session.date).getTime() > Date.now();
+      if (isFuture) {
+        toast({
+          title: 'Nije moguće',
+          description: 'Buduće sesije ne mogu biti označene kao odrađene. Otkažite ili obrišite.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
     updateSession(sessionId, { status });
     if (selectedSession && selectedSession.id === sessionId) {
-      setSelectedSession({...selectedSession, status});
+      setSelectedSession({ ...selectedSession, status });
     }
   };
 
@@ -128,15 +145,18 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
           <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
             {session.status === "zakazana" && (
               <>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => updateSessionStatus(session.id, 'odrađena')}
-                  className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                  title="Bio na terapiji"
-                >
-                  <Check className="w-4 h-4" />
-                </Button>
+                {/* Dozvoli označavanje kao odrađeno samo za prošle ili današnje (proteklo vreme) sesije */}
+                {new Date(session.date).getTime() <= Date.now() && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => updateSessionStatus(session.id, 'odrađena')}
+                    className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                    title="Bio na terapiji"
+                  >
+                    <Check className="w-4 h-4" />
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="sm"

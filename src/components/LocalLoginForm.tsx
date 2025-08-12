@@ -58,7 +58,7 @@ export const LocalLoginForm = ({ onLogin }: LocalLoginFormProps) => {
           </div>
           <CardTitle className="text-2xl font-bold">Neutro Admin</CardTitle>
           <CardDescription>
-            Dr Goran Topalović
+            Goran Topalović
             <br />
             Prijavite se za pristup admin panelu
           </CardDescription>

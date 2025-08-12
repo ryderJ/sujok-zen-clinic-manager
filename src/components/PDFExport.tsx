@@ -27,18 +27,20 @@ export const PDFExport = ({ patient, sessions, treatments }: PDFExportProps) => 
     // Main header
     doc.setTextColor(255, 255, 255);
     doc.setFontSize(24);
-    doc.setFont(undefined, 'bold');
+    // @ts-ignore
+    doc.setFont('Roboto', 'bold');
     doc.text('NEUTRO', 40, 20);
     
     doc.setFontSize(12);
     doc.setFont(undefined, 'normal');
-    doc.text('Dr Goran Topalović', 40, 28);
+    doc.text('Goran Topalović', 40, 28);
     doc.text('neutro.rs', 40, 35);
     
     // Report title
     doc.setTextColor(0, 0, 0);
     doc.setFontSize(18);
-    doc.setFont(undefined, 'bold');
+    // @ts-ignore
+    doc.setFont('Roboto', 'bold');
     doc.text('IZVEŠTAJ O PACIJENTU', 20, 70);
     
     // Patient information section
@@ -46,10 +48,12 @@ export const PDFExport = ({ patient, sessions, treatments }: PDFExportProps) => 
     doc.rect(15, 80, 180, 40, 'F');
     
     doc.setFontSize(14);
-    doc.setFont(undefined, 'bold');
+    // @ts-ignore
+    doc.setFont('Roboto', 'bold');
     doc.text('PODACI O PACIJENTU', 20, 90);
     
-    doc.setFont(undefined, 'normal');
+    // @ts-ignore
+    doc.setFont('Roboto', 'normal');
     doc.setFontSize(11);
     doc.text(`Ime i prezime: ${patient.name}`, 20, 100);
     doc.text(`Datum rođenja: ${new Date(patient.date_of_birth).toLocaleDateString('sr-RS')}`, 20, 107);

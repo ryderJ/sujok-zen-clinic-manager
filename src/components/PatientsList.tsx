@@ -27,9 +27,9 @@ export const PatientsList = ({
   const { patients, loading, updatePatient, deletePatient } = usePatients();
   const { sessions } = useSessions();
   
-  const filteredPatients = patients.filter(patient =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPatients = patients
+    .filter(patient => patient.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    .sort((a, b) => a.name.localeCompare(b.name, 'sr', { sensitivity: 'base' }));
 
   const activePatients = filteredPatients.filter(p => p.is_active);
   const inactivePatients = filteredPatients.filter(p => !p.is_active);
