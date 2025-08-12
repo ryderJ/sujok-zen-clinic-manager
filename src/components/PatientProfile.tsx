@@ -102,10 +102,10 @@ export const PatientProfile = ({
 
       {/* Patient Header */}
       <div className="bg-white rounded-2xl p-4 sm:p-6 border border-slate-200">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
           <div className="flex items-center space-x-4">
-            <div className="w-16 h-16 bg-primary/15 rounded-2xl flex items-center justify-center">
-              <span className="text-2xl font-bold text-primary">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 bg-primary/15 rounded-2xl flex items-center justify-center">
+              <span className="text-xl sm:text-2xl font-bold text-primary">
                 {patient.name.split(' ').map((n: string) => n[0]).join('')}
               </span>
             </div>
@@ -124,7 +124,7 @@ export const PatientProfile = ({
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 sm:space-x-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3 self-start sm:self-auto">
             <PDFExport 
               patient={patient}
               sessions={patientSessions}

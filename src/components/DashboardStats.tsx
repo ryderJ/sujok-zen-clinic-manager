@@ -25,16 +25,15 @@ export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
     return sessionDate >= weekAgo && sessionDate <= today;
   });
 
-  // Calculate average treatment duration from treatments
+  // Calculate average treatment duration from treatments (robust numeric coercion)
   const averageTreatmentDuration = treatments.length > 0 
-    ? Math.round(treatments.reduce((sum, treatment) => {
-        const duration = treatment.duration_minutes || 60;
-        console.log(`Treatment ${treatment.id}: duration = ${duration} minutes`); // Debug log
-        return sum + duration;
-      }, 0) / treatments.length)
+    ? Math.round(
+        treatments.reduce((sum, treatment) => {
+          const duration = Number(treatment.duration_minutes);
+          return sum + (Number.isFinite(duration) && duration > 0 ? duration : 60);
+        }, 0) / treatments.length
+      )
     : 60;
-  
-  console.log(`Total treatments: ${treatments.length}, Average treatment duration: ${averageTreatmentDuration}`); // Debug log
   
   // Enhanced statistics
   const thisMonthSessions = sessions.filter(session => {

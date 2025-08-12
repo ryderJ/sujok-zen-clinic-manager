@@ -179,18 +179,31 @@ export const PDFExport = ({ patient, sessions, treatments }: PDFExportProps) => 
       doc.setFontSize(10);
       let treatmentIndex = 0;
 
-      // Helper to fetch image and normalize EXIF orientation
+      // Helper to fetch image and normalize EXIF orientation with URL resolution
       const fetchAndNormalizeImage = async (url: string) => {
         try {
-          const res = await fetch(url);
+          // Resolve to absolute URL if needed (align with TreatmentDetailView)
+          const API_BASE = (import.meta as any).env?.VITE_API_URL || 'http://localhost:3001/api';
+          const UPLOAD_HOST = API_BASE.replace('/api', '');
+          const resolveImage = (src: string) => {
+            if (!src) return src;
+            if (src.startsWith('http://') || src.startsWith('https://') || src.startsWith('data:')) return src;
+            const normalized = src.startsWith('/uploads') ? src : `/uploads/${src.replace(/^\/?/, '')}`;
+            return `${UPLOAD_HOST}${normalized}`;
+          };
+
+          const resolved = resolveImage(url);
+          const res = await fetch(resolved);
           const blob = await res.blob();
 
+          // Try read EXIF orientation
           let orientation: number | undefined;
           try {
             const meta: any = await exifr.parse(blob, ['Orientation']);
             orientation = meta?.Orientation || meta?.orientation;
           } catch {}
 
+          // Draw onto canvas and rotate/flip as needed
           const img = await new Promise<HTMLImageElement>((resolve, reject) => {
             const image = new Image();
             image.onload = () => resolve(image);
