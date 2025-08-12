@@ -110,7 +110,7 @@ const Index = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex w-full">
+    <div className="min-h-screen bg-background flex w-full overflow-x-hidden">
       {/* Mobile header with drawer menu */}
       <div className="md:hidden sticky top-0 z-40 bg-background/80 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
         <div className="flex items-center h-14 px-4 gap-2">
@@ -124,7 +124,7 @@ const Index = () => {
               <Sidebar activeView={activeView} onViewChange={setActiveView} />
             </SheetContent>
           </Sheet>
-          <span className="text-sm font-semibold text-foreground">Neutro Admin</span>
+          {/* title removed on mobile to avoid overflow */}
         </div>
       </div>
 

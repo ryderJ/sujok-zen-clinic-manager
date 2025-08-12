@@ -189,7 +189,8 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
           <h2 className="text-xl font-semibold text-slate-800">Terapijske sesije</h2>
           <Button 
             onClick={onScheduleTherapy}
-            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl"
+            size="sm"
+            className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-xl h-9 px-3 md:h-10 md:px-4"
           >
             <Plus className="w-4 h-4 mr-2" />
             Zakaži sesiju
