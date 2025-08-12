@@ -89,6 +89,11 @@ export const DashboardStats = ({ fullView = false }: DashboardStatsProps) => {
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     .slice(0, 3);
 
+  const upcomingSessions = sessions
+    .filter(s => s.status === 'zakazana' && new Date(s.date) >= new Date())
+    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .slice(0, 5);
+
   return (
     <div className="space-y-6">
       <h2 className="text-xl font-semibold text-slate-800">Pregled prakse</h2>

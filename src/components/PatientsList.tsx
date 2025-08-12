@@ -59,6 +59,15 @@ export const PatientsList = ({
     return patientSessions.length > 0 ? patientSessions[0].date : null;
   };
 
+  const highlightedPatients = activePatients
+    .map(p => ({ p, last: getLastVisit(p.id) }))
+    .sort((a, b) => {
+      const ad = a.last ? new Date(a.last).getTime() : 0;
+      const bd = b.last ? new Date(b.last).getTime() : 0;
+      return bd - ad;
+    })
+    .map(x => x.p);
+
   const renderPatientCard = (patient: Patient) => {
     const sessionCount = getPatientSessionCount(patient.id);
     const lastVisit = getLastVisit(patient.id);
@@ -168,54 +177,67 @@ export const PatientsList = ({
         </Button>
       </div>
 
-      {fullView && (
-        <div className="mb-6 relative">
-          <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
-          <Input
-            placeholder="Pretraži pacijente..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 rounded-xl border-slate-200"
-          />
-        </div>
-      )}
+      {fullView ? (
+        <>
+          <div className="mb-6 relative">
+            <Search className="w-5 h-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+            <Input
+              placeholder="Pretraži pacijente..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10 rounded-xl border-slate-200"
+            />
+          </div>
 
-      <div className="space-y-4 mb-6">
-        <h3 className="font-medium text-slate-700 flex items-center">
-          Aktivni pacijenti 
-          <span className="ml-2 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-            {activePatients.length}
-          </span>
-        </h3>
-        {activePatients.length > 0 ? (
-          activePatients.slice(0, fullView ? undefined : 3).map(renderPatientCard)
-        ) : (
-          <p className="text-slate-500 text-center py-4">Nema aktivnih pacijenata</p>
-        )}
-      </div>
+          <div className="space-y-4 mb-6">
+            <h3 className="font-medium text-slate-700 flex items-center">
+              Aktivni pacijenti 
+              <span className="ml-2 bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
+                {activePatients.length}
+              </span>
+            </h3>
+            {activePatients.length > 0 ? (
+              activePatients.slice(0, undefined).map(renderPatientCard)
+            ) : (
+              <p className="text-slate-500 text-center py-4">Nema aktivnih pacijenata</p>
+            )}
+          </div>
 
-      {(fullView || inactivePatients.length > 0) && (
-        <div className="space-y-4 pt-4 border-t border-slate-200">
-          <h3 className="font-medium text-slate-700 flex items-center">
-            Neaktivni pacijenti 
-            <span className="ml-2 bg-slate-100 text-slate-600 px-2 py-1 rounded-full text-xs">
-              {inactivePatients.length}
-            </span>
-          </h3>
-          {inactivePatients.length > 0 ? (
-            inactivePatients.slice(0, fullView ? undefined : 2).map(renderPatientCard)
-          ) : (
-            <p className="text-slate-500 text-center py-4">Nema neaktivnih pacijenata</p>
+          {(inactivePatients.length > 0) && (
+            <div className="space-y-4 pt-4 border-t border-slate-200">
+              <h3 className="font-medium text-slate-700 flex items-center">
+                Neaktivni pacijenti 
+                <span className="ml-2 bg-slate-100 text-slate-600 px-2 py-1 rounded-full text-xs">
+                  {inactivePatients.length}
+                </span>
+              </h3>
+              {inactivePatients.length > 0 ? (
+                inactivePatients.slice(0, undefined).map(renderPatientCard)
+              ) : (
+                <p className="text-slate-500 text-center py-4">Nema neaktivnih pacijenata</p>
+              )}
+            </div>
           )}
-        </div>
-      )}
+        </>
+      ) : (
+        <>
+          <div className="space-y-4 mb-2">
+            <h3 className="font-medium text-slate-700">Istaknuti pacijenti</h3>
+            {highlightedPatients.length > 0 ? (
+              highlightedPatients.slice(0, 6).map(renderPatientCard)
+            ) : (
+              <p className="text-slate-500 text-center py-4">Nema pacijenata za prikaz</p>
+            )}
+          </div>
 
-      {!fullView && (activePatients.length + inactivePatients.length) > 5 && (
-        <div className="mt-4 text-center">
-          <Button variant="ghost" className="text-blue-600 hover:text-blue-700">
-            Prikaži sve pacijente ({activePatients.length + inactivePatients.length})
-          </Button>
-        </div>
+          {(activePatients.length + inactivePatients.length) > 6 && (
+            <div className="mt-2 text-center">
+              <Button variant="ghost" className="text-blue-600 hover:text-blue-700">
+                Prikaži sve pacijente ({activePatients.length + inactivePatients.length})
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

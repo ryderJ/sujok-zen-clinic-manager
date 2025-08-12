@@ -37,7 +37,7 @@ const Index = () => {
           <div className="space-y-8">
             <div className="mb-8">
               <h1 className="text-3xl font-bold text-slate-800 mb-2">Neutro Admin</h1>
-              <p className="text-slate-600">Goran Topalović - Upravljanje terapeutskom praksom</p>
+              <p className="text-slate-600">Goran Topalovic - Upravljanje terapeutskom praksom</p>
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
