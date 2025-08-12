@@ -200,19 +200,26 @@ app.get('/api/treatments', (req, res) => {
 
 app.post('/api/treatments', upload.array('images', 10), (req, res) => {
   const treatments = readData('treatments');
-  
-  // Process uploaded images
-  const images = req.files ? req.files.map(file => `/uploads/${file.filename}`) : [];
-  
+
+  // Collect images from either uploaded files (preferred) or JSON body (base64/data URLs)
+  let images = [];
+  if (req.files && req.files.length > 0) {
+    images = req.files.map(file => `/uploads/${file.filename}`);
+  } else if (Array.isArray(req.body.images)) {
+    images = req.body.images;
+  } else if (typeof req.body.images === 'string' && req.body.images.trim()) {
+    images = [req.body.images];
+  }
+
   const newTreatment = {
     ...req.body,
     id: Date.now().toString(),
     created_at: new Date().toISOString(),
-    images: images
+    images
   };
-  
+
   treatments.push(newTreatment);
-  
+
   if (writeData('treatments', treatments)) {
     res.json(newTreatment);
   } else {

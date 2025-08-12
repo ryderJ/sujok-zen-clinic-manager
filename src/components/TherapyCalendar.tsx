@@ -85,7 +85,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
 
   const todaysSessions = filteredSessions.filter(session => {
     const today = new Date().toISOString().split('T')[0];
-    return session.date === today;
+    return session.date && session.date.startsWith(today);
   });
 
   const upcomingSessions = filteredSessions.filter(session => {
@@ -108,7 +108,12 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
           <div className="flex-1">
             <div className="flex items-center space-x-3 mb-2">
               <span className="font-semibold text-slate-800">
-                {fullView ? `${new Date(session.date).toLocaleDateString('sr-RS')}` : new Date(session.date).toLocaleDateString('sr-RS')}
+                {new Date(session.date).toLocaleDateString('sr-RS')}
+                {session.date?.includes('T') && (
+                  <span className="ml-2 text-slate-500">
+                    {new Date(session.date).toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' })}
+                  </span>
+                )}
               </span>
               <span className={`px-2 py-1 rounded-full text-xs font-medium border flex items-center space-x-1 ${getStatusColor(session.status)}`}>
                 {getStatusIcon(session.status)}
@@ -294,6 +299,7 @@ export const TherapyCalendar = ({ onScheduleTherapy, onDeleteConfirm, fullView =
                 <div>
                   <p className="font-medium text-slate-800">
                     {new Date(selectedSession.date).toLocaleDateString('sr-RS')}
+                    {selectedSession.date?.includes('T') && ` - ${new Date(selectedSession.date).toLocaleTimeString('sr-RS', { hour: '2-digit', minute: '2-digit' })}`}
                   </p>
                 </div>
               </div>
