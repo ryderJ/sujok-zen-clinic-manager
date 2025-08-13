@@ -1,4 +1,4 @@
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = (import.meta as any).env?.VITE_API_BASE_URL || '/api';
 
 export interface Patient {
   id: string;
@@ -203,6 +203,18 @@ class Database {
     await this.apiCall('/restore', {
       method: 'POST',
       body: JSON.stringify(backup),
+    });
+    return true;
+  }
+
+  async listBackups(): Promise<Array<{ name: string; size: number; createdAt: string }>> {
+    return await this.apiCall('/backups');
+  }
+
+  async restoreBackupByName(name: string): Promise<boolean> {
+    await this.apiCall('/backups/restore', {
+      method: 'POST',
+      body: JSON.stringify({ name }),
     });
     return true;
   }

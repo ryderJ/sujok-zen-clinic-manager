@@ -16,10 +16,12 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 // Data folder setup
 const DATA_DIR = path.join(__dirname, 'data');
 const UPLOADS_DIR = path.join(__dirname, 'uploads');
+const BACKUPS_DIR = path.join(__dirname, 'backups');
 
 // Ensure directories exist
 fs.ensureDirSync(DATA_DIR);
 fs.ensureDirSync(UPLOADS_DIR);
+fs.ensureDirSync(BACKUPS_DIR);
 
 // File paths
 const FILES = {
@@ -330,32 +332,129 @@ app.delete('/api/categories/:id', (req, res) => {
   }
 });
 
-// BACKUP ROUTES
+// BACKUP ROUTES AND SCHEDULER
+function buildBackup() {
+  return {
+    patients: readData('patients'),
+    sessions: readData('sessions'),
+    treatments: readData('treatments'),
+    categories: readData('categories'),
+    exportDate: new Date().toISOString(),
+    version: '1.0',
+  };
+}
+
+function saveBackupToFile() {
+  const backup = buildBackup();
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  const filename = `backup-${ts}.json`;
+  const fullPath = path.join(BACKUPS_DIR, filename);
+  fs.writeJsonSync(fullPath, backup, { spaces: 2 });
+  return { filename, fullPath, backup };
+}
+
+function listBackupFiles() {
+  try {
+    const files = fs.readdirSync(BACKUPS_DIR).filter((n) => n.endsWith('.json'));
+    const items = files.map((name) => {
+      const stat = fs.statSync(path.join(BACKUPS_DIR, name));
+      return {
+        name,
+        size: stat.size,
+        createdAt: stat.mtime.toISOString(),
+      };
+    });
+    // newest first
+    return items.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  } catch (e) {
+    console.error('Failed to list backups:', e);
+    return [];
+  }
+}
+
+function scheduleDailyBackup() {
+  const run = () => {
+    try {
+      const { filename } = saveBackupToFile();
+      console.log('Daily backup saved:', filename);
+    } catch (e) {
+      console.error('Daily backup failed:', e);
+    }
+  };
+
+  const now = new Date();
+  const next = new Date();
+  next.setHours(2, 0, 0, 0); // 02:00 local time
+  if (next <= now) next.setDate(next.getDate() + 1);
+  const delay = next.getTime() - now.getTime();
+  setTimeout(() => {
+    run();
+    setInterval(run, 24 * 60 * 60 * 1000);
+  }, delay);
+}
+
+// Start backup scheduler
+scheduleDailyBackup();
+
+// Manual backup (also persists to file)
 app.get('/api/backup', (req, res) => {
   try {
-    const backup = {
-      patients: readData('patients'),
-      sessions: readData('sessions'),
-      treatments: readData('treatments'),
-      categories: readData('categories'),
-      exportDate: new Date().toISOString(),
-      version: "1.0"
-    };
-    
-    res.json(backup);
+    const { backup, filename } = saveBackupToFile();
+    res.json({ ...backup, file: filename });
   } catch (error) {
     res.status(500).json({ error: 'Failed to create backup' });
   }
 });
 
+// List backups
+app.get('/api/backups', (req, res) => {
+  try {
+    res.json(listBackupFiles());
+  } catch (e) {
+    res.status(500).json({ error: 'Failed to list backups' });
+  }
+});
+
+// Restore by uploaded JSON (compat)
 app.post('/api/restore', (req, res) => {
   try {
     const { patients, sessions, treatments, categories } = req.body;
-    
-    if (writeData('patients', patients || []) &&
-        writeData('sessions', sessions || []) &&
-        writeData('treatments', treatments || []) &&
-        writeData('categories', categories || [])) {
+
+    if (
+      writeData('patients', patients || []) &&
+      writeData('sessions', sessions || []) &&
+      writeData('treatments', treatments || []) &&
+      writeData('categories', categories || [])
+    ) {
+      res.json({ success: true });
+    } else {
+      res.status(500).json({ error: 'Failed to restore data' });
+    }
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to restore data' });
+  }
+});
+
+// Restore by server-stored backup name
+app.post('/api/backups/restore', (req, res) => {
+  try {
+    const name = String(req.body.name || '');
+    if (!name || !name.endsWith('.json')) {
+      return res.status(400).json({ error: 'Invalid backup name' });
+    }
+    const fullPath = path.join(BACKUPS_DIR, path.basename(name));
+    if (!fs.existsSync(fullPath)) {
+      return res.status(404).json({ error: 'Backup not found' });
+    }
+    const data = fs.readJsonSync(fullPath);
+    const { patients, sessions, treatments, categories } = data;
+
+    if (
+      writeData('patients', patients || []) &&
+      writeData('sessions', sessions || []) &&
+      writeData('treatments', treatments || []) &&
+      writeData('categories', categories || [])
+    ) {
       res.json({ success: true });
     } else {
       res.status(500).json({ error: 'Failed to restore data' });

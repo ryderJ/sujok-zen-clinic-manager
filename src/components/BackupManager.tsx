@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Download, Upload, Database, AlertCircle, CheckCircle } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Download, Upload, Database, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -7,10 +7,30 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { db } from "@/lib/database";
-
+import { ConfirmDialog } from "@/components/ConfirmDialog";
 export const BackupManager = () => {
   const [importing, setImporting] = useState(false);
+  const [backups, setBackups] = useState<Array<{ name: string; size: number; createdAt: string }>>([]);
+  const [loadingBackups, setLoadingBackups] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedBackup, setSelectedBackup] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const loadBackups = async () => {
+    setLoadingBackups(true);
+    try {
+      const list = await db.listBackups();
+      setBackups(list);
+    } catch (error) {
+      toast({ title: "Greška", description: "Ne mogu da učitam listu backupa", variant: "destructive" });
+    } finally {
+      setLoadingBackups(false);
+    }
+  };
+
+  useEffect(() => {
+    loadBackups();
+  }, []);
 
   const exportData = async () => {
     try {
@@ -28,14 +48,28 @@ export const BackupManager = () => {
 
       toast({
         title: "Backup kreiran",
-        description: "Svi podaci su uspešno izvezeni",
+        description: "Svi podaci su uspešno izvezeni i sačuvani na serveru",
       });
+      loadBackups();
     } catch (error) {
       toast({
         title: "Greška",
         description: "Neuspešno kreiranje backup-a",
         variant: "destructive",
       });
+    }
+  };
+
+  const handleConfirmRestore = async () => {
+    if (!selectedBackup) return;
+    try {
+      await db.restoreBackupByName(selectedBackup);
+      window.dispatchEvent(new StorageEvent('storage'));
+      toast({ title: "Backup uvezen", description: `Vraćeni podaci iz ${selectedBackup}` });
+      setConfirmOpen(false);
+      loadBackups();
+    } catch (error) {
+      toast({ title: "Greška pri uvozu", description: "Uvoz backupa nije uspeo", variant: "destructive" });
     }
   };
 
@@ -177,6 +211,44 @@ export const BackupManager = () => {
         </Card>
       </div>
 
+      {/* Lista bekapa sa servera */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            Lista backup fajlova (dnevni automatski u 02:00)
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {loadingBackups ? (
+            <div className="text-sm text-muted-foreground">Učitavam listu...</div>
+          ) : backups.length === 0 ? (
+            <div className="text-sm text-muted-foreground">Još uvek nema sačuvanih backup fajlova.</div>
+          ) : (
+            <div className="space-y-2">
+              {backups.map((b) => (
+                <div key={b.name} className="flex items-center justify-between rounded-xl border p-3">
+                  <div className="text-sm">
+                    <div className="font-medium">{b.name}</div>
+                    <div className="text-muted-foreground">
+                      {new Date(b.createdAt).toLocaleString('sr-RS')} · {(b.size / 1024).toFixed(1)} KB
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedBackup(b.name);
+                      setConfirmOpen(true);
+                    }}
+                  >
+                    Uvezi
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       <Card className="border-red-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-red-600">
@@ -197,6 +269,15 @@ export const BackupManager = () => {
           </Button>
         </CardContent>
       </Card>
+
+      {confirmOpen && selectedBackup && (
+        <ConfirmDialog
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={handleConfirmRestore}
+          title="Potvrdi uvoz backupa"
+          message={`Da li ste sigurni da želite da uvezete backup ${selectedBackup}? Svi postojeći podaci će biti zamenjeni.`}
+        />
+      )}
     </div>
   );
 };
