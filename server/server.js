@@ -3,6 +3,7 @@ const cors = require('cors');
 const fs = require('fs-extra');
 const path = require('path');
 const multer = require('multer');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -34,6 +35,12 @@ Object.values(FILES).forEach(file => {
     fs.writeJsonSync(file, []);
   }
 });
+
+// Notifications tracking file setup
+const NOTIFICATIONS_FILE = path.join(DATA_DIR, 'notifications.json');
+if (!fs.existsSync(NOTIFICATIONS_FILE)) {
+  fs.writeJsonSync(NOTIFICATIONS_FILE, { notified15: {} }, { spaces: 2 });
+}
 
 // Helper functions
 const readData = (type) => {
@@ -349,6 +356,113 @@ app.post('/api/restore', (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+
+// Telegram notifications (15 minutes before session)
+const TELEGRAM_BOT_TOKEN = '8000994045:AAH6kef05FWDU6SSsYbADt4l4EBw1MpeLAc';
+const TELEGRAM_CHAT_ID = '-4863878743';
+
+function sendTelegramMessage(text) {
+  return new Promise((resolve, reject) => {
+    const payload = JSON.stringify({
+      chat_id: TELEGRAM_CHAT_ID,
+      text,
+      parse_mode: 'HTML',
+      disable_web_page_preview: true,
+    });
+
+    const options = {
+      hostname: 'api.telegram.org',
+      path: `/bot${TELEGRAM_BOT_TOKEN}/sendMessage`,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(payload),
+      },
+    };
+
+    const req = https.request(options, (res) => {
+      let body = '';
+      res.on('data', (d) => (body += d));
+      res.on('end', () => resolve({ status: res.statusCode, body }));
+    });
+    req.on('error', reject);
+    req.write(payload);
+    req.end();
+  });
+}
+
+function parseSessionDateTime(session) {
+  const [y, m, d] = String(session.date || '').split('-').map((n) => parseInt(n, 10));
+  const [hh, mm] = String(session.time || '').split(':').map((n) => parseInt(n, 10));
+  if (!y || !m || !d || Number.isNaN(hh) || Number.isNaN(mm)) return null;
+  return new Date(y, m - 1, d, hh, mm, 0, 0);
+}
+
+function formatMessage(session, patientName) {
+  const dateStr = `${session.date} ${session.time}`;
+  const lines = [
+    `Podsetnik: terapija za ${patientName} za 15 minuta.`,
+    `Termin: ${dateStr}`,
+  ];
+  if (session.notes) lines.push(`Napomena: ${session.notes}`);
+  return lines.join('\n');
+}
+
+function loadNotifications() {
+  try {
+    return fs.readJsonSync(NOTIFICATIONS_FILE);
+  } catch {
+    return { notified15: {} };
+  }
+}
+
+function saveNotifications(data) {
+  try {
+    fs.writeJsonSync(NOTIFICATIONS_FILE, data, { spaces: 2 });
+  } catch (e) {
+    console.error('Failed to save notifications:', e);
+  }
+}
+
+async function checkAndNotifySessions() {
+  try {
+    const sessions = readData('sessions');
+    const patients = readData('patients');
+    const patientMap = new Map(patients.map((p) => [p.id, p.name]));
+    const notif = loadNotifications();
+    const now = Date.now();
+
+    for (const s of sessions) {
+      const start = parseSessionDateTime(s);
+      if (!start) continue;
+
+      const diff = start.getTime() - now; // milliseconds until session
+      if (diff <= 15 * 60 * 1000 && diff > 0) {
+        const status = String(s.status || '').toLowerCase();
+        if (status === 'cancelled' || status === 'otkazano') continue;
+        if (notif.notified15[s.id]) continue;
+
+        const patientName = patientMap.get(s.patient_id) || 'Nepoznat pacijent';
+        const text = formatMessage(s, patientName);
+        try {
+          await sendTelegramMessage(text);
+          notif.notified15[s.id] = true;
+        } catch (err) {
+          console.error('Telegram send failed:', err);
+        }
+      }
+    }
+
+    saveNotifications(notif);
+  } catch (err) {
+    console.error('checkAndNotifySessions error:', err);
+  }
+}
+
+// Run every minute
+setInterval(checkAndNotifySessions, 60 * 1000);
+// Initial check on startup
+checkAndNotifySessions();
 
 app.listen(PORT, () => {
   console.log(`Neutro Admin Backend server running on port ${PORT}`);
