@@ -36,8 +36,10 @@ Object.values(FILES).forEach(file => {
   }
 });
 
-// Notifications tracking file setup
-const NOTIFICATIONS_FILE = path.join(DATA_DIR, 'notifications.json');
+// Notifications tracking file setup (outside server folder to avoid nodemon restarts)
+const NOTIFICATIONS_DIR = path.join(__dirname, '..', 'local-data');
+fs.ensureDirSync(NOTIFICATIONS_DIR);
+const NOTIFICATIONS_FILE = path.join(NOTIFICATIONS_DIR, 'notifications.json');
 if (!fs.existsSync(NOTIFICATIONS_FILE)) {
   fs.writeJsonSync(NOTIFICATIONS_FILE, { notified15: {} }, { spaces: 2 });
 }
@@ -431,6 +433,7 @@ async function checkAndNotifySessions() {
     const patientMap = new Map(patients.map((p) => [p.id, p.name]));
     const notif = loadNotifications();
     const now = Date.now();
+    let changed = false;
 
     for (const s of sessions) {
       const start = parseSessionDateTime(s);
@@ -447,13 +450,14 @@ async function checkAndNotifySessions() {
         try {
           await sendTelegramMessage(text);
           notif.notified15[s.id] = true;
+          changed = true;
         } catch (err) {
           console.error('Telegram send failed:', err);
         }
       }
     }
 
-    saveNotifications(notif);
+    if (changed) saveNotifications(notif);
   } catch (err) {
     console.error('checkAndNotifySessions error:', err);
   }
