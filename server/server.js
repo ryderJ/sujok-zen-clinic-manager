@@ -36,13 +36,7 @@ Object.values(FILES).forEach(file => {
   }
 });
 
-// Notifications tracking file setup (outside server folder to avoid nodemon restarts)
-const NOTIFICATIONS_DIR = path.join(__dirname, '..', 'local-data');
-fs.ensureDirSync(NOTIFICATIONS_DIR);
-const NOTIFICATIONS_FILE = path.join(NOTIFICATIONS_DIR, 'notifications.json');
-if (!fs.existsSync(NOTIFICATIONS_FILE)) {
-  fs.writeJsonSync(NOTIFICATIONS_FILE, { notified15: {} }, { spaces: 2 });
-}
+// Notifications: switched to in-memory scheduler (no file writes to avoid nodemon restarts)
 
 // Helper functions
 const readData = (type) => {
@@ -167,6 +161,11 @@ app.post('/api/sessions', (req, res) => {
   sessions.push(newSession);
   
   if (writeData('sessions', sessions)) {
+    try {
+      scheduleNotificationForSession(newSession);
+    } catch (e) {
+      console.error('Failed to schedule notification:', e);
+    }
     res.json(newSession);
   } else {
     res.status(500).json({ error: 'Failed to save session' });
@@ -182,15 +181,27 @@ app.put('/api/sessions/:id', (req, res) => {
   }
   
   sessions[index] = { ...sessions[index], ...req.body };
+  const updatedSession = sessions[index];
   
   if (writeData('sessions', sessions)) {
-    res.json(sessions[index]);
+    try {
+      cancelScheduledNotification(updatedSession.id);
+      scheduleNotificationForSession(updatedSession);
+    } catch (e) {
+      console.error('Failed to reschedule notification:', e);
+    }
+    res.json(updatedSession);
   } else {
     res.status(500).json({ error: 'Failed to update session' });
   }
 });
 
 app.delete('/api/sessions/:id', (req, res) => {
+  try {
+    cancelScheduledNotification(req.params.id);
+  } catch (e) {
+    console.error('Failed to cancel scheduled notification:', e);
+  }
   const sessions = readData('sessions');
   const filteredSessions = sessions.filter(s => s.id !== req.params.id);
   
@@ -423,67 +434,79 @@ function formatMessage(session, patientName) {
   return lines.join('\n');
 }
 
-function loadNotifications() {
+// In-memory scheduler for Telegram notifications
+const scheduledJobs = new Map();
+const SCHEDULE_AHEAD_MS = 15 * 60 * 1000;
+
+async function sendNotificationForSession(session) {
   try {
-    return fs.readJsonSync(NOTIFICATIONS_FILE);
-  } catch {
-    return { notified15: {} };
+    const patients = readData('patients');
+    const patientName =
+      (patients.find((p) => p.id === session.patient_id)?.name) || 'Nepoznat pacijent';
+    const text = formatMessage(session, patientName);
+    const result = await sendTelegramMessage(text);
+    if (!result.ok) {
+      console.error('Telegram send failed:', result);
+      throw new Error('Telegram send failed');
+    }
+    return result;
+  } catch (err) {
+    console.error('sendNotificationForSession error:', err);
+    throw err;
   }
 }
 
-function saveNotifications(data) {
+function cancelScheduledNotification(sessionId) {
+  const t = scheduledJobs.get(sessionId);
+  if (t) {
+    clearTimeout(t);
+    scheduledJobs.delete(sessionId);
+  }
+}
+
+function scheduleNotificationForSession(session) {
   try {
-    fs.writeJsonSync(NOTIFICATIONS_FILE, data, { spaces: 2 });
+    if (!session || !session.id) return;
+    cancelScheduledNotification(session.id);
+    const start = parseSessionDateTime(session);
+    if (!start) return;
+    const now = Date.now();
+    const status = String(session.status || '').toLowerCase();
+    if (status === 'cancelled' || status === 'otkazano') return;
+
+    const sendAt = start.getTime() - SCHEDULE_AHEAD_MS;
+    const delay = sendAt - now;
+
+    if (start.getTime() <= now) return;
+
+    const timer = setTimeout(async () => {
+      try {
+        await sendNotificationForSession(session);
+      } catch (e) {
+        // already logged
+      } finally {
+        scheduledJobs.delete(session.id);
+      }
+    }, Math.max(0, delay));
+
+    scheduledJobs.set(session.id, timer);
   } catch (e) {
-    console.error('Failed to save notifications:', e);
+    console.error('scheduleNotificationForSession error:', e);
   }
 }
 
-async function checkAndNotifySessions() {
+function scheduleAllExistingSessions() {
   try {
     const sessions = readData('sessions');
-    const patients = readData('patients');
-    const patientMap = new Map(patients.map((p) => [p.id, p.name]));
-    const notif = loadNotifications();
-    const now = Date.now();
-    let changed = false;
-
-    for (const s of sessions) {
-      const start = parseSessionDateTime(s);
-      if (!start) continue;
-
-      const diff = start.getTime() - now; // milliseconds until session
-      if (diff <= 15 * 60 * 1000 && diff > 0) {
-        const status = String(s.status || '').toLowerCase();
-        if (status === 'cancelled' || status === 'otkazano') continue;
-        if (notif.notified15[s.id]) continue;
-
-        const patientName = patientMap.get(s.patient_id) || 'Nepoznat pacijent';
-        const text = formatMessage(s, patientName);
-        try {
-          const result = await sendTelegramMessage(text);
-          if (result.ok) {
-            notif.notified15[s.id] = true;
-            changed = true;
-          } else {
-            console.error('Telegram send failed:', result);
-          }
-        } catch (err) {
-          console.error('Telegram request error:', err);
-        }
-        }
-      }
-
-    if (changed) saveNotifications(notif);
-  } catch (err) {
-    console.error('checkAndNotifySessions error:', err);
+    sessions.forEach((s) => scheduleNotificationForSession(s));
+  } catch (e) {
+    console.error('scheduleAllExistingSessions error:', e);
   }
 }
 
-// Run every minute
-setInterval(checkAndNotifySessions, 60 * 1000);
-// Initial check on startup
-checkAndNotifySessions();
+// Schedule on startup
+scheduleAllExistingSessions();
+
 
 app.listen(PORT, () => {
   console.log(`Neutro Admin Backend server running on port ${PORT}`);
