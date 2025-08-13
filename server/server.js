@@ -430,17 +430,31 @@ function sendTelegramMessage(text, chatId = DEFAULT_CHAT_ID) {
 }
 
 function parseSessionDateTime(session) {
-  const [y, m, d] = String(session.date || '').split('-').map((n) => parseInt(n, 10));
-  const [hh, mm] = String(session.time || '').split(':').map((n) => parseInt(n, 10));
+  const rawDate = String(session.date || '').trim();
+  const rawTime = String(session.time || '').trim();
+  if (!rawDate) return null;
+
+  // Try direct parse for ISO-like strings (e.g., "YYYY-MM-DDTHH:mm")
+  if (rawDate.includes('T') || rawDate.includes(' ')) {
+    const dt = new Date(rawDate);
+    if (!isNaN(dt.getTime())) return dt;
+  }
+
+  // Fallback to separate fields (date + time)
+  const [y, m, d] = rawDate.split('-').map((n) => parseInt(n, 10));
+  const [hh, mm] = rawTime ? rawTime.split(':').map((n) => parseInt(n, 10)) : [NaN, NaN];
   if (!y || !m || !d || Number.isNaN(hh) || Number.isNaN(mm)) return null;
   return new Date(y, m - 1, d, hh, mm, 0, 0);
 }
 
 function formatMessage(session, patientName) {
-  const dateStr = `${session.date} ${session.time}`;
+  const dt = parseSessionDateTime(session);
+  const when = dt
+    ? dt.toLocaleString('sr-RS', { dateStyle: 'medium', timeStyle: 'short' })
+    : String(session.date || '').replace('T', ' ');
   const lines = [
     `Podsetnik: terapija za ${patientName} za 15 minuta.`,
-    `Termin: ${dateStr}`,
+    `Termin: ${when}`,
   ];
   if (session.notes) lines.push(`Napomena: ${session.notes}`);
   return lines.join('\n');
@@ -556,6 +570,27 @@ app.get('/api/telegram/updates', (req, res) => {
     res.status(500).json({ error: String(err) });
   });
   r.end();
+});
+// Scheduler debug endpoint
+app.get('/api/notifications/scheduled', (req, res) => {
+  const now = Date.now();
+  const sessions = readData('sessions');
+  const items = Array.from(scheduledJobs.keys()).map((id) => {
+    const s = sessions.find((x) => x.id === id);
+    const start = s ? parseSessionDateTime(s) : null;
+    const sendAt = start ? start.getTime() - SCHEDULE_AHEAD_MS : null;
+    const inMs = sendAt != null ? sendAt - now : null;
+    return {
+      id,
+      patient_id: s?.patient_id,
+      status: s?.status,
+      date: s?.date,
+      sendAt,
+      inMs,
+      inMinutes: inMs != null ? Math.round(inMs / 60000) : null,
+    };
+  });
+  res.json({ now, count: items.length, items });
 });
 
 app.listen(PORT, () => {
