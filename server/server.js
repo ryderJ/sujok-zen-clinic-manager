@@ -385,9 +385,22 @@ function sendTelegramMessage(text) {
     const req = https.request(options, (res) => {
       let body = '';
       res.on('data', (d) => (body += d));
-      res.on('end', () => resolve({ status: res.statusCode, body }));
+      res.on('end', () => {
+        let json = null;
+        try {
+          json = JSON.parse(body);
+        } catch {}
+        const ok = res.statusCode === 200 && json && json.ok === true;
+        if (!ok) {
+          console.error('Telegram API error:', { status: res.statusCode, body: body });
+        }
+        resolve({ ok, status: res.statusCode, body: json || body });
+      });
     });
-    req.on('error', reject);
+    req.on('error', (err) => {
+      console.error('Telegram request error:', err);
+      reject(err);
+    });
     req.write(payload);
     req.end();
   });
@@ -448,14 +461,18 @@ async function checkAndNotifySessions() {
         const patientName = patientMap.get(s.patient_id) || 'Nepoznat pacijent';
         const text = formatMessage(s, patientName);
         try {
-          await sendTelegramMessage(text);
-          notif.notified15[s.id] = true;
-          changed = true;
+          const result = await sendTelegramMessage(text);
+          if (result.ok) {
+            notif.notified15[s.id] = true;
+            changed = true;
+          } else {
+            console.error('Telegram send failed:', result);
+          }
         } catch (err) {
-          console.error('Telegram send failed:', err);
+          console.error('Telegram request error:', err);
+        }
         }
       }
-    }
 
     if (changed) saveNotifications(notif);
   } catch (err) {
