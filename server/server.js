@@ -372,9 +372,10 @@ app.get('/health', (req, res) => {
 
 // Telegram notifications (15 minutes before session)
 const TELEGRAM_BOT_TOKEN = '8000994045:AAH6kef05FWDU6SSsYbADt4l4EBw1MpeLAc';
-const TELEGRAM_CHAT_ID = '-4863878743';
+const TELEGRAM_CHAT_ID = '-1002836584138';
+let DEFAULT_CHAT_ID = TELEGRAM_CHAT_ID;
 
-function sendTelegramMessage(text, chatId = TELEGRAM_CHAT_ID) {
+function sendTelegramMessage(text, chatId = DEFAULT_CHAT_ID) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify({
       chat_id: chatId,
@@ -403,6 +404,17 @@ function sendTelegramMessage(text, chatId = TELEGRAM_CHAT_ID) {
         } catch {}
         const ok = res.statusCode === 200 && json && json.ok === true;
         if (!ok) {
+          // Handle migration to supergroup chat id automatically
+          const migrateTo = json && json.parameters && json.parameters.migrate_to_chat_id;
+          if (migrateTo) {
+            console.warn('Telegram chat migrated. Updating DEFAULT_CHAT_ID and retrying with:', migrateTo);
+            DEFAULT_CHAT_ID = String(migrateTo);
+            // Retry once with the migrated chat id
+            sendTelegramMessage(text, DEFAULT_CHAT_ID)
+              .then(resolve)
+              .catch(reject);
+            return;
+          }
           console.error('Telegram API error:', { status: res.statusCode, body: body });
         }
         resolve({ ok, status: res.statusCode, body: json || body });
