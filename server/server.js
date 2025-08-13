@@ -374,10 +374,10 @@ app.get('/health', (req, res) => {
 const TELEGRAM_BOT_TOKEN = '8000994045:AAH6kef05FWDU6SSsYbADt4l4EBw1MpeLAc';
 const TELEGRAM_CHAT_ID = '-4863878743';
 
-function sendTelegramMessage(text) {
+function sendTelegramMessage(text, chatId = TELEGRAM_CHAT_ID) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify({
-      chat_id: TELEGRAM_CHAT_ID,
+      chat_id: chatId,
       text,
       parse_mode: 'HTML',
       disable_web_page_preview: true,
@@ -507,6 +507,44 @@ function scheduleAllExistingSessions() {
 // Schedule on startup
 scheduleAllExistingSessions();
 
+// Telegram debug endpoints
+app.get('/api/telegram/test', async (req, res) => {
+  try {
+    const text = String(req.query.text || 'Test poruka iz servera (manualni test)');
+    const chatId = String(req.query.chat_id || TELEGRAM_CHAT_ID);
+    const result = await sendTelegramMessage(text, chatId);
+    res.json({ ok: result.ok, status: result.status, body: result.body, chatId });
+  } catch (e) {
+    console.error('Telegram test error:', e);
+    res.status(500).json({ ok: false, error: String(e) });
+  }
+});
+
+app.get('/api/telegram/updates', (req, res) => {
+  const offset = req.query.offset ? `?offset=${encodeURIComponent(String(req.query.offset))}` : '';
+  const options = {
+    hostname: 'api.telegram.org',
+    path: `/bot${TELEGRAM_BOT_TOKEN}/getUpdates${offset}`,
+    method: 'GET',
+  };
+  const r = https.request(options, (tgRes) => {
+    let body = '';
+    tgRes.on('data', (d) => (body += d));
+    tgRes.on('end', () => {
+      try {
+        const json = JSON.parse(body);
+        res.status(tgRes.statusCode || 200).json(json);
+      } catch {
+        res.status(tgRes.statusCode || 200).send(body);
+      }
+    });
+  });
+  r.on('error', (err) => {
+    console.error('getUpdates error:', err);
+    res.status(500).json({ error: String(err) });
+  });
+  r.end();
+});
 
 app.listen(PORT, () => {
   console.log(`Neutro Admin Backend server running on port ${PORT}`);
